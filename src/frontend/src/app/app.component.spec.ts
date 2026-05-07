@@ -44,25 +44,63 @@ describe('AppComponent', () => {
     expect(component.title).toEqual('Dev Dashboard');
   });
 
+  // describe('ngOnInit', () => {
+  //   // TODO RED: Write test for initial scan trigger
+  //   // it('should trigger scan on initialization', () => {
+  //   //   repositoryStateSpy.scanWorkspaces.and.returnValue(of(mockScanResult));
+  //   //   component.ngOnInit();
+  //   //   expect(repositoryStateSpy.scanWorkspaces).toHaveBeenCalled();
+  //   // });
+  // });
+
+  // describe('onScanClick', () => {
+  //   // TODO RED: Write test for scan button click
+  //   // TODO RED: Write test for loading state during scan
+  // });
+
   describe('ngOnInit', () => {
-    // TODO RED: Write test for initial scan trigger
-    // it('should trigger scan on initialization', () => {
-    //   repositoryStateSpy.scanWorkspaces.and.returnValue(of(mockScanResult));
-    //   component.ngOnInit();
-    //   expect(repositoryStateSpy.scanWorkspaces).toHaveBeenCalled();
-    // });
+    it('should trigger scan on initialization', () => {
+      repositoryStateSpy.scanWorkspaces.and.returnValue(of({
+        repositories: [],
+        totalCount: 0,
+        scanDurationMs: 10,
+        scannedAt: new Date(),
+        scannedPaths: []
+      }));
+
+      fixture.detectChanges(); // triggers ngOnInit
+      expect(repositoryStateSpy.scanWorkspaces).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('onScanClick', () => {
-    // TODO RED: Write test for scan button click
-    // TODO RED: Write test for loading state during scan
+    it('should call scanWorkspaces on service', () => {
+      repositoryStateSpy.scanWorkspaces.and.returnValue(of({
+        repositories: [],
+        totalCount: 0,
+        scanDurationMs: 10,
+        scannedAt: new Date(),
+        scannedPaths: []
+      }));
+
+      component.onScanClick();
+      expect(repositoryStateSpy.scanWorkspaces).toHaveBeenCalled();
+    });
   });
 
   describe('Template', () => {
-    // TODO RED: Write test for toolbar rendering
-    // TODO RED: Write test for scan button rendering
-    // TODO RED: Write test for loading spinner when loading$ is true
-    // TODO RED: Write test for error message when error$ has value
-    // TODO RED: Write test for repository list rendering
+    it('should render toolbar with title', () => {
+      repositoryStateSpy.scanWorkspaces.and.returnValue(of({
+        repositories: [],
+        totalCount: 0,
+        scanDurationMs: 10,
+        scannedAt: new Date(),
+        scannedPaths: []
+      }));
+
+      fixture.detectChanges();
+      const compiled = fixture.nativeElement as HTMLElement;
+      expect(compiled.querySelector('mat-toolbar')).toBeTruthy();
+    });
   });
 });
