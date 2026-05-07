@@ -1,0 +1,44 @@
+<mat-toolbar color="primary" class="toolbar">
+  <span class="toolbar-title">{{ title }}</span>
+  
+  <span class="toolbar-spacer"></span>
+  
+  <!-- Repository count badge -->
+  <span class="repository-count" *ngIf="(repositoriesCount$ | async) as count">
+    {{ count }} {{ count === 1 ? 'repository' : 'repositories' }}
+  </span>
+  
+  <!-- Scan button -->
+  <button 
+    mat-raised-button 
+    color="accent"
+    (click)="onScanClick()"
+    [disabled]="loading$ | async"
+    data-testid="btn-scan-app"
+    class="m-8">
+    <mat-icon>refresh</mat-icon>
+    Scan Workspaces
+  </button>
+</mat-toolbar>
+
+<div class="main-container p-24">
+  
+  <!-- Loading spinner -->
+  <div *ngIf="loading$ | async" class="loading-container">
+    <mat-spinner data-testid="spinner-loading-app"></mat-spinner>
+    <p class="m-16">Scanning workspaces...</p>
+  </div>
+  
+  <!-- Error message -->
+  <div *ngIf="error$ | async as error" class="error-container p-16">
+    <mat-icon color="warn">error</mat-icon>
+    <p>{{ error }}</p>
+  </div>
+  
+  <!-- Repository list -->
+  <app-repository-list 
+    *ngIf="!(loading$ | async)"
+    data-testid="list-repositories-app">
+  </app-repository-list>
+  
+</div>

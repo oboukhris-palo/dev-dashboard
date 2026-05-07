@@ -1,0 +1,21 @@
+node_modules/
+dist/
+coverage/
+.angular/
+*.log
+.DS_Store
+*.war
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Test results
+test-results/
+playwright-report/
+
+# Environment files
+.env
+.env.local

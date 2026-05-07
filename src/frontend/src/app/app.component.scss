@@ -1,0 +1,64 @@
+.toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.toolbar-title {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.toolbar-spacer {
+  flex: 1 1 auto;
+}
+
+.repository-count {
+  margin-right: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.main-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  
+  p {
+    margin-top: var(--spacing-md);
+    color: var(--color-gray-medium);
+    font-size: 16px;
+  }
+}
+
+.error-container {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  background-color: #ffebee;
+  border-left: 4px solid #f44336;
+  border-radius: 4px;
+  margin-bottom: var(--spacing-lg);
+  
+  mat-icon {
+    flex-shrink: 0;
+  }
+  
+  p {
+    margin: 0;
+    color: #c62828;
+    font-size: 14px;
+  }
+}

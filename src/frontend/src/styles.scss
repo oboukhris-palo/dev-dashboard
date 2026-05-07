@@ -1,0 +1,55 @@
+/* You can add global styles to this file, and also import other style files */
+@import '@angular/material/prebuilt-themes/indigo-pink.css';
+
+html, body { 
+  height: 100%; 
+  margin: 0;
+  font-family: Roboto, "Helvetica Neue", sans-serif;
+}
+
+/* Palo IT Design System Colors */
+:root {
+  --color-primary: #0066CC;
+  --color-black: #000000;
+  --color-white: #FFFFFF;
+  --color-gray-light: #F0F0F0;
+  --color-gray-medium: #808080;
+  --color-gray-dark: #404040;
+  --color-purple: #7B3FF2;
+  --color-green: #00A651;
+  --color-orange: #FF8C42;
+  
+  /* Spacing scale (multiples of 4px) */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+}
+
+/* Global spacing utilities */
+.p-4 { padding: var(--spacing-xs); }
+.p-8 { padding: var(--spacing-sm); }
+.p-16 { padding: var(--spacing-md); }
+.p-24 { padding: var(--spacing-lg); }
+.p-32 { padding: var(--spacing-xl); }
+
+.m-4 { margin: var(--spacing-xs); }
+.m-8 { margin: var(--spacing-sm); }
+.m-16 { margin: var(--spacing-md); }
+.m-24 { margin: var(--spacing-lg); }
+.m-32 { margin: var(--spacing-xl); }
+
+.gap-4 { gap: var(--spacing-xs); }
+.gap-8 { gap: var(--spacing-sm); }
+.gap-16 { gap: var(--spacing-md); }
+.gap-24 { gap: var(--spacing-lg); }
+
+/* Loading spinner container */
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+}
