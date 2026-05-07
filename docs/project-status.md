@@ -23,7 +23,7 @@
 
 | Epic Key | Epic Name | Priority | Status | Stories | Progress | Points |
 |----------|-----------|----------|--------|---------|----------|--------|
-| REPO-001 | Repository Discovery & Scanning | High | In Progress | 0/3 | 0% | 0/8 |
+| REPO-001 | Repository Discovery & Scanning | High | In Progress | 1/3 | 33% | 5/8 |
 | REPO-002 | Repository Information Display | High | Not Started | 0/2 | 0% | 0/5 |
 | REPO-003 | Repository Metadata Management | High | Not Started | 0/3 | 0% | 0/6 |
 | REPO-004 | Deployment & Infrastructure | Medium | Not Started | 0/2 | 0% | 0/4 |
@@ -40,7 +40,7 @@
 **Priority:** High
 
 **Stories:**
-- [x] REPO-001-US-001: Scan Workspace Directories (5 pts) — In Progress
+- [x] REPO-001-US-001: Scan Workspace Directories (5 pts) — ✅ Implemented (45 tests, 85.71% coverage)
 - [ ] REPO-001-US-002: Extract Repository Metadata (3 pts) — Sprint 1
 - [ ] REPO-001-US-003: Detect Technology Stack (2 pts) — Not Started
 

@@ -39,7 +39,7 @@
 
 | Story Key | Title | Story Points | Status | Assignee | Layer Progress |
 |-----------|-------|--------------|--------|----------|----------------|
-| REPO-001-US-001 | Scan Workspace Directories | 5 | In Progress | Developer | 0/4 layers |
+| REPO-001-US-001 | Scan Workspace Directories | 5 | ✅ Implemented | Developer | 4/4 layers |
 | REPO-001-US-002 | Extract Repository Metadata | 3 | Not Started | Developer | 0/4 layers |
 
 **Total Story Points:** 8 SP
