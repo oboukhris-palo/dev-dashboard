@@ -1,54 +1,71 @@
 <div class="repository-grid">
   
   <!-- Empty state -->
-  <div *ngIf="(repositories$ | async)?.length === 0" class="empty-state">
-    <mat-icon class="empty-icon">folder_off</mat-icon>
-    <h2>No Repositories Found</h2>
-    <p>Click "Scan Workspaces" to discover git repositories in your workspace directories.</p>
-  </div>
+  @if (repositories$ | async; as repos) {
+    @if (repos.length === 0) {
+      <div class="empty-state">
+        <mat-icon class="empty-icon">folder_off</mat-icon>
+        <h2>No Repositories Found</h2>
+        <p>Click "Scan Workspaces" to discover git repositories in your workspace directories.</p>
+      </div>
+    }
+  }
   
   <!-- Repository cards -->
-  <mat-card 
-    *ngFor="let repo of repositories$ | async; trackBy: trackByPath"
-    class="repository-card"
-    (click)="onCardClick(repo)"
-    [attr.data-testid]="'card-repository-' + repo.name">
-    
-    <mat-card-header>
-      <mat-icon mat-card-avatar>folder</mat-icon>
-      <mat-card-title>{{ repo.name }}</mat-card-title>
-      <mat-card-subtitle>{{ repo.path }}</mat-card-subtitle>
-    </mat-card-header>
-    
-    <mat-card-content>
-      <p *ngIf="repo.description" class="description">
-        {{ repo.description }}
-      </p>
-      <p *ngIf="!repo.description" class="no-description">
-        No description available
-      </p>
-      
-      <!-- Tech stack badges -->
-      <div *ngIf="repo.techStack && repo.techStack.length > 0" class="tech-stack gap-8">
-        <mat-chip 
-          *ngFor="let tech of repo.techStack"
-          [color]="getTechColor(tech)"
-          [attr.data-testid]="'badge-tech-' + tech">
-          {{ tech }}
-        </mat-chip>
-      </div>
-      
-      <!-- Phase and status badges -->
-      <div class="metadata gap-8">
-        <mat-chip *ngIf="repo.phase" class="chip-phase">
-          {{ repo.phase }}
-        </mat-chip>
-        <mat-chip *ngIf="repo.status" class="chip-status">
-          {{ repo.status }}
-        </mat-chip>
-      </div>
-    </mat-card-content>
-    
-  </mat-card>
+  @if (repositories$ | async; as repos) {
+    @for (repo of repos; track trackByPath($index, repo)) {
+      <mat-card 
+        class="repository-card"
+        (click)="onCardClick(repo)"
+        [attr.data-testid]="'card-repository-' + repo.name">
+        
+        <mat-card-header>
+          <mat-icon mat-card-avatar>folder</mat-icon>
+          <mat-card-title>{{ repo.name }}</mat-card-title>
+          <mat-card-subtitle>{{ repo.path }}</mat-card-subtitle>
+        </mat-card-header>
+        
+        <mat-card-content>
+          @if (repo.description) {
+            <p class="description">
+              {{ repo.description }}
+            </p>
+          } @else {
+            <p class="no-description">
+              (No description)
+            </p>
+          }
+          
+          <!-- Tech stack badges -->
+          @if (repo.techStack && repo.techStack.length > 0) {
+            <div class="tech-stack gap-8">
+              @for (tech of repo.techStack; track tech) {
+                <mat-chip 
+                  [style.background-color]="getTechColor(tech)"
+                  [attr.data-testid]="'badge-tech-' + tech">
+                  {{ tech }}
+                </mat-chip>
+              }
+            </div>
+          }
+          
+          <!-- Phase and status badges -->
+          <div class="metadata gap-8">
+            @if (repo.phase) {
+              <mat-chip class="chip-phase">
+                {{ repo.phase }}
+              </mat-chip>
+            }
+            @if (repo.status) {
+              <mat-chip class="chip-status">
+                {{ repo.status }}
+              </mat-chip>
+            }
+          </div>
+        </mat-card-content>
+        
+      </mat-card>
+    }
+  }
   
 </div>

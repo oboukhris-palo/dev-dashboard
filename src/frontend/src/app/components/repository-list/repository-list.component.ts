@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
@@ -34,19 +34,10 @@ import { RepositoryStateService } from '@state/repository-state.service';
   styleUrls: ['./repository-list.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class RepositoryListComponent implements OnInit {
+export class RepositoryListComponent {
+  private readonly repositoryState = inject(RepositoryStateService);
 
-  repositories$: Observable<Repository[]>;
-
-  constructor(
-    private repositoryState: RepositoryStateService
-  ) {
-    this.repositories$ = this.repositoryState.repositories$;
-  }
-
-  ngOnInit(): void {
-    // TODO: Add any initialization logic if needed
-  }
+  repositories$: Observable<Repository[]> = this.repositoryState.repositories$;
 
   /**
    * Handle card click (open in file explorer)
@@ -77,22 +68,19 @@ export class RepositoryListComponent implements OnInit {
   }
 
   /**
-   * Get tech stack badge color
-   * 
-   * @param tech - Technology name
-   * @returns string - Material color name
-   * 
-   * @todo RED: Write test for color mapping
-   * @todo GREEN: Implement color logic
+   * Get tech stack badge hex color for the given technology name.
+   *
+   * @param tech - Technology name (e.g. 'Angular', 'Node.js', 'Java', '.NET', 'Python')
+   * @returns string - Hex color code for the badge background
    */
   getTechColor(tech: string): string {
-    // TODO: Implement tech color mapping
-    // Node.js → 'accent' (green)
-    // Angular → 'warn' (red)
-    // Java → 'primary' (blue)
-    // .NET → '' (purple - custom)
-    // Default → '' (gray)
-    
-    return '';
+    switch (tech) {
+      case 'Angular': return '#DD0031';
+      case 'Node.js': return '#68A063';
+      case 'Java':    return '#0066CC';
+      case '.NET':    return '#7B3FF2';
+      case 'Python':  return '#FFD43B';
+      default:        return '#757575';
+    }
   }
 }

@@ -46,8 +46,6 @@ export class FileSystemService {
    */
   private readonly mockFilesystem: Map<string, MockDirectory> = this.initializeMockData();
 
-  constructor() { }
-
   /**
    * Initialize mock filesystem data
    * Separated for clarity and testability
@@ -68,7 +66,9 @@ export class FileSystemService {
         path: `${WORKSPACE_PATHS.PRIMARY}/dev-dashboard`,
         subdirectories: [],
         files: {
-          'README.md': '# Dev Dashboard\n\nLocal Angular Material SPA for managing code repositories.'
+          'README.md': '# Dev Dashboard\n\nLocal Angular Material SPA for managing code repositories.',
+          'angular.json': '{}',
+          'package.json': '{"name":"dev-dashboard"}'
         },
         hasGit: true
       }],
@@ -76,7 +76,8 @@ export class FileSystemService {
         path: `${WORKSPACE_PATHS.PRIMARY}/project-alpha`,
         subdirectories: [],
         files: {
-          'README.md': '# Project Alpha\n\nA sample Node.js project.'
+          'README.md': '# Project Alpha\n\nA sample Node.js project.',
+          'package.json': '{"name":"project-alpha"}'
         },
         hasGit: true
       }],
@@ -99,7 +100,8 @@ export class FileSystemService {
         path: `${WORKSPACE_PATHS.SECONDARY}/legacy-app`,
         subdirectories: [],
         files: {
-          'README.md': '# Legacy App\n\nOld Java application.'
+          'README.md': '# Legacy App\n\nOld Java application.',
+          'pom.xml': '<project></project>'
         },
         hasGit: true
       }],
@@ -122,6 +124,37 @@ export class FileSystemService {
         hasGit: false
       }]
     ]);
+  }
+
+  /**
+   * Check if a file exists in the given directory
+   *
+   * @param path - Absolute file path (directory + filename)
+   * @returns Observable<boolean> - true if file exists
+   */
+  exists(path: string): Observable<boolean> {
+    const lastSlashIndex = path.lastIndexOf('/');
+    const directoryPath = path.substring(0, lastSlashIndex);
+    const filename = path.substring(lastSlashIndex + 1);
+
+    const directory = this.mockFilesystem.get(directoryPath);
+    return of(directory?.files[filename] !== undefined);
+  }
+
+  /**
+   * List all filenames in a given directory (not subdirectories)
+   *
+   * @param path - Absolute path to directory
+   * @returns Observable<string[]> - Array of filenames in the directory
+   */
+  readDirectory(path: string): Observable<string[]> {
+    const directory = this.mockFilesystem.get(path);
+
+    if (!directory) {
+      return of([]);
+    }
+
+    return of(Object.keys(directory.files));
   }
 
   /**
