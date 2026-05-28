@@ -4,11 +4,9 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { RepositoryStateService } from '@state/repository-state.service';
 import { MetadataPersistenceService } from '@services/metadata-persistence.service';
 import { RepositoryListComponent } from './components/repository-list/repository-list.component';
-import { SetupWizardComponent } from './components/setup-wizard/setup-wizard.component';
 
 /**
  * Root Application Component
@@ -34,7 +32,6 @@ import { SetupWizardComponent } from './components/setup-wizard/setup-wizard.com
     MatButtonModule,
     MatIconModule,
     MatProgressSpinnerModule,
-    MatDialogModule,
     RepositoryListComponent
   ],
   templateUrl: './app.component.html',
@@ -44,7 +41,6 @@ import { SetupWizardComponent } from './components/setup-wizard/setup-wizard.com
 export class AppComponent implements OnInit {
   private readonly repositoryState = inject(RepositoryStateService);
   private readonly metadataPersistence = inject(MetadataPersistenceService);
-  private readonly dialog = inject(MatDialog);
   
   title = 'Dev Dashboard';
 
@@ -54,41 +50,9 @@ export class AppComponent implements OnInit {
   repositoriesCount$ = this.repositoryState.repositoriesCount$;
 
   ngOnInit(): void {
-    // Check if workspaces are configured
-    this.checkConfigurationAndScan();
-  }
-
-  /**
-   * Check if workspaces are configured, show wizard if not, otherwise scan
-   */
-  private checkConfigurationAndScan(): void {
-    const configuredPaths = localStorage.getItem('dev-dashboard-workspace-paths');
-    
-    if (!configuredPaths || JSON.parse(configuredPaths).length === 0) {
-      // Show setup wizard
-      this.openSetupWizard();
-    } else {
-      // Auto-scan on load
-      this.onScanClick();
-    }
-  }
-
-  /**
-   * Open the setup wizard dialog
-   */
-  openSetupWizard(): void {
-    const dialogRef = this.dialog.open(SetupWizardComponent, {
-      width: '700px',
-      disableClose: true,
-      panelClass: 'setup-wizard-dialog'
-    });
-
-    dialogRef.afterClosed().subscribe(result => {
-      if (result && result.shouldScan) {
-        // User configured workspaces, trigger scan
-        this.onScanClick();
-      }
-    });
+    // Configuration handled by Electron setup wizard before app loads
+    // Just trigger initial scan
+    this.onScanClick();
   }
 
   /**

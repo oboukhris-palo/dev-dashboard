@@ -93,35 +93,13 @@
 
 ## Configuration System
 
-**Backend Configuration** (`src/backend/.env`):
-```env
-# Server port
-PORT=3000
+**Electron Setup Wizard** (first-run only):
+- Runs automatically on first launch (before Angular app loads)
+- Saves configuration to: `~/Library/Application Support/dev-dashboard/workspace-config.json`
+- Add multiple workspace directories
+- Configuration persists across app restarts
 
-# Workspace paths (comma-separated absolute paths)
-WORKSPACE_PATHS=/Users/username/workspace,/Users/username/projects
-
-# Directories to exclude from scanning
-EXCLUDE_PATTERNS=node_modules,.git,dist,build,target,.vscode,.idea,coverage,out
-
-# Debug logging (optional)
-DEBUG=false
-```
-
-**Setup for New Developers**:
-1. Copy template: `cd src/backend && cp .env.example .env`
-2. Edit `.env` with their workspace paths
-3. Interactive setup available: `./setup.sh` (macOS/Linux)
-
-**Configuration Loading**:
-- Backend loads `.env` at startup via `dotenv/config`
-- Frontend uses backend API (`/api/config`) to get workspace paths
-- No frontend configuration needed
-
-**File Locations**:
-- ✅ `src/backend/.env.example` - Template with placeholders
-- ✅ `src/backend/.env` - User-specific config (git-ignored)
-- ✅ `src/backend/setup.sh` - Interactive configuration script
+**No Angular configuration** - All setup handled by Electron wizard before app starts.
 
 ## Repository Structure
 

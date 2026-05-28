@@ -12,8 +12,8 @@
         "dev": "concurrently \"cd src/backend && npm run dev\" \"cd src/frontend && npm start\" \"wait-on http://localhost:4200 && electron .\"",
         "build": "npm run build:backend && npm run build:frontend",
         "build:backend": "cd src/backend && npm run build",
-        "build:frontend": "cd src/frontend && npx ng build --configuration production --output-path=dist/dev-dashboard/browser",
-        "build:prod": "npm run build:backend && cd src/frontend && npx ng build --configuration production --output-path=dist/dev-dashboard/browser --base-href=./",
+        "build:frontend": "cd src/frontend && npx ng build --configuration production",
+        "build:prod": "npm run build:backend && cd src/frontend && npx ng build --configuration production --base-href=./",
         "package": "npm run build:prod && electron-builder",
         "package:mac": "npm run build:prod && electron-builder --mac",
         "package:win": "npm run build:prod && electron-builder --win",
@@ -36,6 +36,7 @@
     "build": {
         "appId": "com.paloit.dev-dashboard",
         "productName": "Dev Dashboard",
+        "asar": false,
         "directories": {
             "output": "release",
             "buildResources": "build"
@@ -43,9 +44,14 @@
         "files": [
             "electron/**/*",
             "src/backend/dist/**/*",
-            "src/backend/.env.example",
-            "src/frontend/dist/dev-dashboard/browser/**/*",
-            "!src/backend/node_modules",
+            "src/frontend/dist/dev-dashboard/**/*",
+            "package.json",
+            "!**/*.ts",
+            "!**/*.map",
+            "!**/test",
+            "!**/tests",
+            "!src/backend/src",
+            "!src/frontend/src",
             "!src/frontend/node_modules"
         ],
         "extraResources": [

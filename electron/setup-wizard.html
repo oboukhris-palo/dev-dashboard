@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dev Dashboard - Setup</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #333;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      padding: 20px;
+    }
+
+    .setup-container {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      padding: 40px;
+      width: 100%;
+      max-width: 560px;
+    }
+
+    .logo {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .logo h1 {
+      color: #667eea;
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .logo p {
+      color: #666;
+      font-size: 14px;
+    }
+
+    .section {
+      margin-bottom: 30px;
+    }
+
+    .section h2 {
+      font-size: 18px;
+      color: #333;
+      margin-bottom: 12px;
+    }
+
+    .section p {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 16px;
+      line-height: 1.6;
+    }
+
+    .workspace-list {
+      border: 2px dashed #e0e0e0;
+      border-radius: 8px;
+      padding: 16px;
+      min-height: 120px;
+      max-height: 200px;
+      overflow-y: auto;
+      margin-bottom: 12px;
+      background: #fafafa;
+    }
+
+    .workspace-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      background: white;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      margin-bottom: 8px;
+      font-size: 13px;
+      color: #333;
+    }
+
+    .workspace-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .workspace-path {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      margin-right: 12px;
+    }
+
+    .remove-btn {
+      background: #f44336;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 4px 10px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .remove-btn:hover {
+      background: #d32f2f;
+    }
+
+    .empty-state {
+      text-align: center;
+      color: #999;
+      font-size: 13px;
+      padding: 40px 20px;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 30px;
+    }
+
+    button {
+      flex: 1;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .add-btn {
+      background: #00A651;
+      color: white;
+    }
+
+    .add-btn:hover:not(:disabled) {
+      background: #008A43;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 166, 81, 0.3);
+    }
+
+    .save-btn {
+      background: #667eea;
+      color: white;
+      padding: 14px 24px;
+      font-size: 16px;
+      width: 100%;
+    }
+
+    .save-btn:hover:not(:disabled) {
+      background: #5568d3;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .error {
+      background: #ffebee;
+      color: #c62828;
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      margin-bottom: 16px;
+      display: none;
+    }
+
+    .error.show {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="setup-container">
+    <div class="logo">
+      <h1>🚀 Dev Dashboard</h1>
+      <p>First-Time Setup</p>
+    </div>
+
+    <div class="section">
+      <h2>Add Workspace Directories</h2>
+      <p>Select the directories where you keep your git repositories. You can add multiple paths.</p>
+      
+      <div id="error" class="error"></div>
+      
+      <div class="workspace-list" id="workspaceList">
+        <div class="empty-state">
+          No workspace paths added yet.<br>
+          Click "Add Directory" to get started.
+        </div>
+      </div>
+
+      <div class="button-group">
+        <button class="add-btn" id="addBtn">
+          📁 Add Directory
+        </button>
+      </div>
+    </div>
+
+    <button class="save-btn" id="saveBtn" disabled>
+      Save & Continue
+    </button>
+  </div>
+
+  <script>
+    const workspacePaths = [];
+
+    function showError(message) {
+      const errorEl = document.getElementById('error');
+      errorEl.textContent = message;
+      errorEl.classList.add('show');
+      setTimeout(() => {
+        errorEl.classList.remove('show');
+      }, 3000);
+    }
+
+    function updateList() {
+      const listEl = document.getElementById('workspaceList');
+      const saveBtn = document.getElementById('saveBtn');
+      
+      console.log('updateList called, workspacePaths:', [...workspacePaths]);
+      console.log('workspacePaths.length:', workspacePaths.length);
+      
+      if (workspacePaths.length === 0) {
+        listEl.innerHTML = '<div class="empty-state">No workspace paths added yet.<br>Click "Add Directory" to get started.</div>';
+        saveBtn.disabled = true;
+      } else {
+        const items = workspacePaths.map((path, index) => {
+          console.log(`Creating HTML for path ${index}:`, path);
+          
+          // Create elements safely to avoid HTML injection issues
+          const itemDiv = document.createElement('div');
+          itemDiv.className = 'workspace-item';
+          
+          const pathDiv = document.createElement('div');
+          pathDiv.className = 'workspace-path';
+          pathDiv.title = path;
+          pathDiv.textContent = path;
+          
+          const removeBtn = document.createElement('button');
+          removeBtn.className = 'remove-btn';
+          removeBtn.textContent = 'Remove';
+          removeBtn.onclick = () => removePath(index);
+          
+          itemDiv.appendChild(pathDiv);
+          itemDiv.appendChild(removeBtn);
+          
+          return itemDiv.outerHTML;
+        });
+        
+        listEl.innerHTML = items.join('');
+        console.log('List updated with', items.length, 'items');
+        saveBtn.disabled = false;
+      }
+    }
+
+    async function addDirectory() {
+      try {
+        console.log('Opening directory selector...');
+        const path = await window.electronAPI.selectDirectory();
+        console.log('Selected path:', path);
+        console.log('Path type:', typeof path);
+        console.log('Current workspacePaths before adding:', [...workspacePaths]);
+        
+        if (!path) {
+          console.log('No path selected (user canceled)');
+          return;
+        }
+        
+        // Validate path is a non-empty string
+        if (typeof path !== 'string' || path.trim() === '') {
+          console.error('Invalid path received:', path);
+          showError('Invalid directory path');
+          return;
+        }
+        
+        const trimmedPath = path.trim();
+        
+        if (workspacePaths.includes(trimmedPath)) {
+          console.log('Path already exists in list');
+          showError('This directory is already added');
+          return;
+        }
+        
+        workspacePaths.push(trimmedPath);
+        console.log('Path added successfully');
+        console.log('Current workspacePaths after adding:', [...workspacePaths]);
+        updateList();
+      } catch (error) {
+        showError('Failed to select directory');
+        console.error('Error in addDirectory:', error);
+      }
+    }
+
+    window.removePath = function(index) {
+      workspacePaths.splice(index, 1);
+      updateList();
+    };
+
+    async function saveConfiguration() {
+      const saveBtn = document.getElementById('saveBtn');
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Saving...';
+      
+      try {
+        const config = {
+          workspacePaths: workspacePaths,
+          excludePatterns: ['node_modules', '.git', 'dist', 'build', 'target', '.vscode', '.idea', 'coverage', 'out']
+        };
+        
+        const success = await window.electronAPI.saveConfig(config);
+        
+        if (success) {
+          saveBtn.textContent = '✓ Saved!';
+          // Window will close automatically via IPC
+        } else {
+          showError('Failed to save configuration');
+          saveBtn.disabled = false;
+          saveBtn.textContent = 'Save & Continue';
+        }
+      } catch (error) {
+        showError('Failed to save configuration');
+        console.error(error);
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save & Continue';
+      }
+    }
+
+    document.getElementById('addBtn').addEventListener('click', addDirectory);
+    document.getElementById('saveBtn').addEventListener('click', saveConfiguration);
+  </script>
+</body>
+</html>
