@@ -1,7 +1,58 @@
 <div class="repository-grid">
   
-  <!-- Empty state -->
+  <!-- Search filter -->
   @if (repositories$ | async; as repos) {
+    @if (repos.length > 0) {
+      <div class="search-section" data-testid="search-section">
+        <mat-form-field appearance="outline" class="search-field">
+          <mat-label>🔍 Search repositories...</mat-label>
+          <input 
+            matInput 
+            type="text"
+            [(ngModel)]="searchTerm"
+            (ngModelChange)="onSearchChange($event)"
+            placeholder="Type name, path, tech stack, or keywords"
+            data-testid="input-search">
+          @if (searchTerm) {
+            <button 
+              matSuffix 
+              mat-icon-button 
+              (click)="clearSearch()"
+              matTooltip="Clear search"
+              data-testid="btn-clear-search">
+              <mat-icon>close</mat-icon>
+            </button>
+          }
+        </mat-form-field>
+      </div>
+    }
+  }
+  
+  <!-- Sort controls -->
+  @if (repositories$ | async; as repos) {
+    @if (repos.length > 0) {
+      <div class="sort-controls" data-testid="sort-controls">
+        <span class="sort-label">Sort by:</span>
+        @for (field of ['name', 'phase', 'status']; track field) {
+          <button
+            class="sort-btn"
+            [class.active]="currentSort.field === field"
+            [attr.data-testid]="'sort-btn-' + field"
+            (click)="setSortFieldFromString(field)">
+            {{ field | titlecase }}
+            @if (currentSort.field === field) {
+              <mat-icon class="sort-icon">
+                {{ currentSort.direction === 'asc' ? 'arrow_upward' : 'arrow_downward' }}
+              </mat-icon>
+            }
+          </button>
+        }
+      </div>
+    }
+  }
+
+  <!-- Empty state -->
+  @if (sortedRepositories$ | async; as repos) {
     @if (repos.length === 0) {
       <div class="empty-state">
         <mat-icon class="empty-icon">folder_off</mat-icon>
@@ -12,57 +63,87 @@
   }
   
   <!-- Repository cards -->
-  @if (repositories$ | async; as repos) {
+  @if (sortedRepositories$ | async; as repos) {
     @for (repo of repos; track trackByPath($index, repo)) {
       <mat-card 
         class="repository-card"
-        (click)="onCardClick(repo)"
+        [class.selected]="isSelected(repo)"
+        (click)="selectRepository(repo)"
         [attr.data-testid]="'card-repository-' + repo.name">
         
         <mat-card-header>
           <mat-icon mat-card-avatar>folder</mat-icon>
           <mat-card-title>{{ repo.name }}</mat-card-title>
-          <mat-card-subtitle>{{ repo.path }}</mat-card-subtitle>
+          <mat-card-subtitle 
+            [matTooltip]="repo.path"
+            matTooltipPosition="above"
+            [matTooltipShowDelay]="500">
+            {{ truncatePath(repo.path, 40) }}
+          </mat-card-subtitle>
         </mat-card-header>
         
         <mat-card-content>
-          @if (repo.description) {
-            <p class="description">
-              {{ repo.description }}
-            </p>
-          } @else {
-            <p class="no-description">
-              (No description)
-            </p>
-          }
+          <!-- Inline description edit -->
+          <div class="description-section">
+            <app-inline-description-edit
+              [id]="repo.id"
+              [value]="repo.metadata?.description || repo.description || ''"
+              (valueChanged)="updateDescriptionValue(repo.id, $event)">
+            </app-inline-description-edit>
+          </div>
+
+          <!-- Phase & Status Selector -->
+          <app-phase-status-selector
+            [id]="repo.id"
+            [phase]="$any(repo.phase)"
+            [status]="$any(repo.status)"
+            (phaseChanged)="updatePhaseValue(repo.id, $event)"
+            (statusChanged)="updateStatusValue(repo.id, $event)">
+          </app-phase-status-selector>
           
-          <!-- Tech stack badges -->
+          <!-- Tech stack - GitHub style language bar -->
           @if (repo.techStack && repo.techStack.length > 0) {
-            <div class="tech-stack gap-8">
-              @for (tech of repo.techStack; track tech) {
-                <mat-chip 
-                  [style.background-color]="getTechColor(tech)"
-                  [attr.data-testid]="'badge-tech-' + tech">
-                  {{ tech }}
-                </mat-chip>
-              }
+            <div class="languages-section">
+              <div class="language-bar">
+                @for (tech of repo.techStack; track tech) {
+                  <div 
+                    class="language-segment"
+                    [style.width.%]="getLanguagePercentage(repo.techStack, tech)"
+                    [style.background-color]="getLanguageColor(tech)"
+                    [matTooltip]="tech + ' ' + getLanguagePercentage(repo.techStack, tech).toFixed(1) + '%'"
+                    matTooltipPosition="above"
+                    [attr.data-testid]="'lang-bar-' + tech">
+                  </div>
+                }
+              </div>
+              <div class="language-list">
+                @for (tech of repo.techStack; track tech) {
+                  <div class="language-item" [attr.data-testid]="'lang-item-' + tech">
+                    <span 
+                      class="language-dot" 
+                      [style.background-color]="getLanguageColor(tech)">
+                    </span>
+                    <span class="language-name">{{ tech }}</span>
+                    <span class="language-percent">{{ getLanguagePercentage(repo.techStack, tech).toFixed(1) }}%</span>
+                  </div>
+                }
+              </div>
             </div>
           }
-          
-          <!-- Phase and status badges -->
-          <div class="metadata gap-8">
-            @if (repo.phase) {
-              <mat-chip class="chip-phase">
-                {{ repo.phase }}
-              </mat-chip>
-            }
-            @if (repo.status) {
-              <mat-chip class="chip-status">
-                {{ repo.status }}
-              </mat-chip>
-            }
-          </div>
         </mat-card-content>
+
+        <mat-card-actions class="card-actions">
+          <button 
+            mat-raised-button
+            [matTooltip]="'Open in VS Code Insiders'"
+            matTooltipPosition="above"
+            (click)="openInVSCode(repo); $event.stopPropagation();"
+            class="vscode-button"
+            [attr.data-testid]="'btn-vscode-' + repo.name">
+            <img src="assets/vscode-insiders-icon.png" alt="VS Code" class="vscode-icon">
+            <span class="vscode-label">Open in VS Code</span>
+          </button>
+        </mat-card-actions>
         
       </mat-card>
     }
