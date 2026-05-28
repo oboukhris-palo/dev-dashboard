@@ -72,14 +72,32 @@
         [attr.data-testid]="'card-repository-' + repo.name">
         
         <mat-card-header>
-          <mat-icon mat-card-avatar>folder</mat-icon>
-          <mat-card-title>{{ repo.name }}</mat-card-title>
-          <mat-card-subtitle 
-            [matTooltip]="repo.path"
-            matTooltipPosition="above"
-            [matTooltipShowDelay]="500">
-            {{ truncatePath(repo.path, 40) }}
-          </mat-card-subtitle>
+          <div class="header-content">
+            <div class="header-left">
+              <mat-icon mat-card-avatar>folder</mat-icon>
+              <div class="header-text">
+                <mat-card-title>{{ repo.name }}</mat-card-title>
+                <mat-card-subtitle 
+                  [matTooltip]="repo.path"
+                  matTooltipPosition="above"
+                  [matTooltipShowDelay]="500">
+                  {{ truncatePath(repo.path, 40) }}
+                </mat-card-subtitle>
+              </div>
+            </div>
+            <div class="header-right">
+              <button 
+                mat-raised-button
+                [matTooltip]="'Open in VS Code Insiders'"
+                matTooltipPosition="below"
+                (click)="openInVSCode(repo); $event.stopPropagation();"
+                class="vscode-button"
+                [attr.data-testid]="'btn-vscode-' + repo.name">
+                <img src="assets/vscode-insiders-icon.png" alt="VS Code" class="vscode-icon">
+                <span class="vscode-label">Open in VS Code</span>
+              </button>
+            </div>
+          </div>
         </mat-card-header>
         
         <mat-card-content>
@@ -131,19 +149,6 @@
             </div>
           }
         </mat-card-content>
-
-        <mat-card-actions class="card-actions">
-          <button 
-            mat-raised-button
-            [matTooltip]="'Open in VS Code Insiders'"
-            matTooltipPosition="above"
-            (click)="openInVSCode(repo); $event.stopPropagation();"
-            class="vscode-button"
-            [attr.data-testid]="'btn-vscode-' + repo.name">
-            <img src="assets/vscode-insiders-icon.png" alt="VS Code" class="vscode-icon">
-            <span class="vscode-label">Open in VS Code</span>
-          </button>
-        </mat-card-actions>
         
       </mat-card>
     }

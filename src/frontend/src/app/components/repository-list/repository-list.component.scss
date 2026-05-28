@@ -123,8 +123,34 @@
   mat-card-header {
     margin-bottom: var(--spacing-md);
     
+    .header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      width: 100%;
+      gap: var(--spacing-md);
+    }
+    
+    .header-left {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--spacing-md);
+      flex: 1;
+      min-width: 0; // Allow text truncation
+    }
+    
+    .header-text {
+      flex: 1;
+      min-width: 0; // Allow text truncation
+    }
+    
+    .header-right {
+      flex-shrink: 0;
+    }
+    
     mat-icon {
       color: var(--color-primary);
+      flex-shrink: 0;
     }
   }
   
@@ -252,19 +278,13 @@
   color: white !important;
 }
 
-.card-actions {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  padding: var(--spacing-sm) var(--spacing-md) !important;
-  margin-top: auto;
-}
-
 .vscode-button {
-  display: flex;
+  display: inline-flex !important;
   align-items: center;
-  gap: 8px;
-  padding: 8px 16px !important;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 12px !important;
+  min-height: 36px;
   transition: all 0.2s ease-in-out;
   background-color: #00A651 !important; // Palo IT green
   color: white !important;
@@ -272,6 +292,7 @@
   border-radius: 4px;
   text-transform: none;
   letter-spacing: normal;
+  white-space: nowrap;
   
   &:hover {
     transform: scale(1.05);
@@ -280,14 +301,16 @@
   }
   
   .vscode-icon {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
     display: block;
+    flex-shrink: 0;
   }
   
   .vscode-label {
-    font-size: 14px;
+    font-size: 13px;
     line-height: 1;
+    flex-shrink: 0;
   }
 }
 
