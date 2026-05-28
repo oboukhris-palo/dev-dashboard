@@ -1,8 +1,8 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { tap, catchError, finalize } from 'rxjs/operators';
 import { Repository, ScanResult } from '@domain/index';
-import { RepositoryScannerService } from '@services/repository-scanner.service';
 import {
   repositoryStore,
   repositories$,
@@ -11,7 +11,12 @@ import {
   lastScan$,
   repositoriesCount$
 } from './repository.store';
-import { setEntities, updateEntities, deleteEntities } from '@ngneat/elf-entities';
+import { setEntities, updateEntities } from '@ngneat/elf-entities';
+
+/**
+ * Backend API configuration
+ */
+const API_BASE_URL = 'http://localhost:3000/api';
 
 /**
  * Repository State Service
@@ -23,15 +28,14 @@ import { setEntities, updateEntities, deleteEntities } from '@ngneat/elf-entitie
  * @story REPO-001-US-001 - Scan Workspace Directories
  * @layer Layer 3 - State Management
  * 
- * @tdd-instructions
- * 1. Write failing tests for each method (RED phase)
- * 2. Implement minimal code to pass tests (GREEN phase)
- * 3. Refactor for quality (REFACTOR phase)
+ * @implementation
+ * Calls Node.js backend API for repository scanning (services migrated to backend).
  */
 @Injectable({
   providedIn: 'root'
 })
 export class RepositoryStateService {
+  private readonly http = inject(HttpClient);
 
   // Expose selectors as public observables
   public readonly repositories$ = repositories$;
@@ -40,36 +44,50 @@ export class RepositoryStateService {
   public readonly lastScan$ = lastScan$;
   public readonly repositoriesCount$ = repositoriesCount$;
 
-  constructor(
-    private scannerService: RepositoryScannerService
-  ) { }
-
   /**
    * Trigger a full workspace scan
    * Updates store with scan results
+   * Calls backend API for real filesystem scanning
    * 
    * @returns Observable<ScanResult> - Scan results
-   * 
-   * @todo RED: Write test for successful scan
-   * @todo RED: Write test for loading state transitions
-   * @todo RED: Write test for error handling
-   * @todo GREEN: Implement scan with state updates
-   * @todo REFACTOR: Add optimistic updates
    */
   scanWorkspaces(): Observable<ScanResult> {
-    // TODO: Implement scan with state management
-    // 1. Set loading = true, error = null
-    // 2. Call scannerService.scanWorkspaces()
-    // 3. On success:
-    //    - Update repositories entities with setEntities()
-    //    - Set lastScan metadata
-    //    - Set loading = false
-    // 4. On error:
-    //    - Set error message
-    //    - Set loading = false
-    // 5. Return scan result observable
-    
-    throw new Error('Not implemented');
+    // Set loading state
+    repositoryStore.update((state) => ({
+      ...state,
+      loading: true,
+      error: null
+    }));
+
+    return this.http.get<ScanResult>(`${API_BASE_URL}/repos/scan`).pipe(
+      tap(result => {
+        // Update store with scan results
+        repositoryStore.update(
+          setEntities(result.repositories),
+          (state) => ({
+            ...state,
+            loading: false,
+            lastScan: result
+          })
+        );
+      }),
+      catchError(error => {
+        // Handle error
+        repositoryStore.update((state) => ({
+          ...state,
+          loading: false,
+          error: error.message || 'Failed to scan workspaces'
+        }));
+        throw error;
+      }),
+      finalize(() => {
+        // Ensure loading is always set to false
+        repositoryStore.update((state) => ({
+          ...state,
+          loading: false
+        }));
+      })
+    );
   }
 
   /**
@@ -78,50 +96,36 @@ export class RepositoryStateService {
    * @param id - Repository ID
    * @param changes - Partial repository updates
    * @returns void
-   * 
-   * @todo RED: Write test for successful update
-   * @todo RED: Write test for non-existing repository (should be no-op)
-   * @todo GREEN: Implement update
-   * 
-   * @story REPO-003-US-001 - Inline Edit Metadata
    */
   updateRepository(id: string, changes: Partial<Repository>): void {
-    // TODO: Implement repository update
-    // Use updateEntities() to update the repository in the store
-    
-    throw new Error('Not implemented');
+    repositoryStore.update(
+      updateEntities(id, changes)
+    );
   }
 
   /**
    * Clear all repositories from store
    * 
    * @returns void
-   * 
-   * @todo RED: Write test for clear operation
-   * @todo GREEN: Implement clear
    */
   clearRepositories(): void {
-    // TODO: Implement clear
-    // 1. Use setEntities([]) to clear all repositories
-    // 2. Reset lastScan to null
-    // 3. Reset error to null
-    
-    throw new Error('Not implemented');
+    repositoryStore.update(
+      setEntities([]),
+      (state) => ({
+        ...state,
+        lastScan: null,
+        error: null
+      })
+    );
   }
 
   /**
    * Get current repository count (synchronous)
    * 
    * @returns number - Current repository count
-   * 
-   * @todo RED: Write test for count retrieval
-   * @todo GREEN: Implement count
    */
   getRepositoryCount(): number {
-    // TODO: Implement count
-    // Access store value synchronously and return entities length
-    
-    throw new Error('Not implemented');
+    return repositoryStore.query(state => state.entities ? Object.keys(state.entities).length : 0);
   }
 
   /**
@@ -129,15 +133,10 @@ export class RepositoryStateService {
    * 
    * @param id - Repository ID to check
    * @returns boolean - true if exists
-   * 
-   * @todo RED: Write test for existing repository
-   * @todo RED: Write test for non-existing repository
-   * @todo GREEN: Implement existence check
    */
   repositoryExists(id: string): boolean {
-    // TODO: Implement existence check
-    // Access store value synchronously and check if entity exists
-    
-    throw new Error('Not implemented');
+    return repositoryStore.query(state => {
+      return state.entities ? id in state.entities : false;
+    });
   }
 }

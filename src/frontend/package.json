@@ -6,13 +6,25 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
-    "build:prod": "ng build --configuration production",
+    "build:prod": "ng build --configuration production --source-map=false --base-href=/dev-dashboard/",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test",
-    "test:coverage": "ng test --code-coverage",
+    "test": "ng test --watch=false --browsers=ChromeHeadless",
+    "test:watch": "ng test",
+    "test:debug": "ng test --browsers=Chrome",
+    "test:coverage": "ng test --watch=false --code-coverage --browsers=ChromeHeadless",
+    "test:ci": "ng test --watch=false --code-coverage --browsers=ChromeHeadless --progress=false",
+    "test:layer2": "ng test --watch=false --include='**/services/**/*.spec.ts' --browsers=ChromeHeadless",
+    "test:layer3": "ng test --watch=false --include='**/state/**/*.spec.ts' --browsers=ChromeHeadless",
+    "test:layer4": "ng test --watch=false --include='**/components/**/*.spec.ts' --browsers=ChromeHeadless",
+    "test:unit": "ng test --watch=false --include='**/*.spec.ts' --exclude='**/e2e/**' --browsers=ChromeHeadless",
     "lint": "ng lint",
     "e2e": "playwright test",
-    "package:war": "npm run build:prod && cd dist/dev-dashboard && jar -cvf ../dev-dashboard.war *"
+    "e2e:ui": "playwright test --ui",
+    "e2e:debug": "playwright test --debug",
+    "package:war": "npm run build:prod && node scripts/build-war.js",
+    "build:war": "npm run build:prod && node scripts/build-war.js",
+    "deploy": "npm run build:war && ./scripts/deploy.sh",
+    "deploy:rollback": "./scripts/deploy-rollback.sh"
   },
   "private": true,
   "dependencies": {
@@ -39,12 +51,15 @@
     "@playwright/test": "^1.44.0",
     "@types/jasmine": "^5.1.0",
     "@types/node": "^20.12.0",
+    "angular-eslint": "21.0.1",
+    "eslint": "^9.39.1",
     "jasmine-core": "^5.1.0",
     "karma": "^6.4.0",
     "karma-chrome-launcher": "^3.2.0",
     "karma-coverage": "^2.2.0",
     "karma-jasmine": "^5.1.0",
     "karma-jasmine-html-reporter": "^2.1.0",
-    "typescript": "~5.4.0"
+    "typescript": "~5.4.0",
+    "typescript-eslint": "8.46.4"
   }
 }

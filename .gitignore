@@ -1,2 +1,31 @@
-
+.DS_Store
 .gene2-core/
+.github/
+.vscode/
+
+# Angular
+dist/
+.angular/
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# TypeScript
+*.js
+*.js.map
+*.d.ts
+!src/**/*.js
+
+# Build
+build/
+out/
+*.tsbuildinfo
+
+# IDEs
+.idea/
+*.swp
+*.swo
+*~
+

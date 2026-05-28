@@ -22,28 +22,18 @@ story_points: 3
 
 ## Acceptance Criteria
 
-- [ ] WAR file deploys to Apache webapps directory
-- [ ] Application accessible at configured URL (e.g., http://localhost:8080/dev-dashboard)
-- [ ] Application starts with Apache service
-- [ ] Deployment script documented
+**Given** a production WAR file (`dev-dashboard.war`) from REPO-004-US-001  
+**When** the deployment script is executed on the developer's laptop  
+**Then** all the following criteria must be satisfied:
 
----
-
-## BDD Scenarios
-
-```gherkin
-Feature: Apache Deployment
-
-  Scenario: Deploy to Apache
-    Given a production WAR file
-    When I deploy to Apache webapps directory
-    Then the application is accessible at the configured URL
-
-  Scenario: Auto-start with Apache
-    Given the application is deployed
-    When Apache service starts
-    Then the application is automatically available
-```
+- [ ] WAR file is extracted to Apache deployment directory (Apache: `/usr/local/apache2/htdocs/dev-dashboard/` OR Tomcat: `/opt/tomcat/webapps/`)
+- [ ] Application is accessible at configured URL (`http://localhost:8080/dev-dashboard`)
+- [ ] SPA routing is configured (all non-matching routes return `index.html`)
+- [ ] Application starts automatically when Apache/Tomcat service starts
+- [ ] Deployment script is documented in README with clear instructions
+- [ ] Apache configuration includes proper `.htaccess` for SPA routing (Apache mode)
+- [ ] No manual startup required after deployment
+- [ ] Deployment can be repeated without manual cleanup (idempotent)
 
 ---
 
@@ -147,22 +137,47 @@ echo "Deployment complete. Application available at http://localhost:8080/dev-da
 - Test Apache configuration is valid
 - Test SPA routing works (all routes return index.html)
 
-**BDD Tests:**
-- Implement both Gherkin scenarios above
-- Verify application accessible at configured URL after deployment
-- Verify application starts with Apache service
+**Manual Verification (YOLO Mode):**
+- [ ] Run deployment script with no errors
+- [ ] Verify application loads at `http://localhost:8080/dev-dashboard` (browser)
+- [ ] Verify SPA routing: navigate to `/dev-dashboard/any-path` returns home (not 404)
+- [ ] Restart Apache service and verify application is still available
+- [ ] Verify no manual intervention required after service restart
 
-**Manual Verification:**
-1. Deploy WAR to Apache/Tomcat
+---
+
+## Definition of Ready Checklist
+
+- [x] Story has clear, testable acceptance criteria
+- [x] Technical assumptions documented (Apache 2.4+ OR Tomcat 9+, SPA routing)
+- [x] Deployment paths specified for both Apache and Tomcat
+- [x] No BDD scenarios required (YOLO mode)
+- [x] Acceptance criteria are measurable and verifiable
+- [x] Dependencies identified (REPO-004-US-001 must be complete)
+- [x] Implementation notes include deployment scripts
+- [x] Ready for Dev-Lead Phase 3 (Implementation Planning)
+
+---
+
+## Notes for Development Team
+
+**Implementation Mode (YOLO - No BDD):**
+- Follow acceptance criteria as plain text checklist (no Gherkin scenarios)
+- Create deployment scripts for both Apache and Tomcat targets
+- Test both deployment paths for compatibility
+- Document configuration requirements in README
+
+**Manual Verification Steps:**
+1. Deploy WAR to Apache/Tomcat target
 2. Access http://localhost:8080/dev-dashboard in browser
 3. Verify application loads correctly
 4. Verify SPA routing works (navigate to different routes, refresh page)
-5. Restart Apache/Tomcat, verify application still accessible
-6. Test on clean Apache installation
+5. Restart Apache/Tomcat service, verify application still accessible
+6. Test on clean Apache/Tomcat installation
 
-**Rollback Test:**
-- Document rollback procedure (remove WAR, restore previous version)
-- Test rollback to previous version
+**Rollback Procedure:**
+- Document how to remove deployed WAR and restore previous version
+- Test rollback to previous version before production deployment
 
 ---
 

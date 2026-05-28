@@ -8,3 +8,6 @@
 export * from './repository.model';
 export * from './workspace-config.model';
 export * from './scan-result.model';
+export * from './metadata.model';
+export * from './phase.enum';
+export * from './status.enum';

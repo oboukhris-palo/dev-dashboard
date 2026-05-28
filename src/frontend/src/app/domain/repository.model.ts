@@ -1,3 +1,5 @@
+import { RepositoryMetadata } from './metadata.model';
+
 /**
  * Repository Domain Model
  * 
@@ -24,10 +26,16 @@ export interface Repository {
   path: string;
 
   /**
-   * Repository description (extracted from README.md)
+   * Repository description (extracted from README.md first paragraph)
    * Max 200 characters, stripped of markdown formatting
    */
   description?: string;
+
+  /**
+   * Whether a README.md file exists in the repository
+   * @story REPO-001-US-002 - Extract Repository Metadata
+   */
+  readmeExists?: boolean;
 
   /**
    * Detected technology stack (e.g., 'Node.js', 'Java', '.NET', 'Python', 'Angular')
@@ -57,4 +65,12 @@ export interface Repository {
    * @future Enhancement for git integration
    */
   hasUncommittedChanges?: boolean;
+
+  /**
+   * Repository metadata (description, phase, status for editing/persistence)
+   * @story REPO-003-US-001 - Edit Repository Description
+   * @story REPO-003-US-002 - Edit Project Phase and Status
+   * @story REPO-003-US-003 - Persist Metadata Locally
+   */
+  metadata?: RepositoryMetadata;
 }

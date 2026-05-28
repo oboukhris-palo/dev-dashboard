@@ -1,0 +1,61 @@
+---
+metadata:
+  templateId: "plan-approval"
+  templateVersion: "2.0"
+  documentType: "gate-checkpoint"
+  title: "Plan Approval Gate: REPO-004-US-002"
+  agent_context:
+    phase: "implementation"
+    epic_ref: "REPO-004"
+    user_story_ref: "REPO-004-US-002"
+    created_date: 2026-05-27
+
+story: REPO-004-US-002
+plan_version: v1
+scope:
+  - Layer1
+  - Layer2
+  - Layer3
+  - Layer4
+
+risk: low
+
+approvers:
+  - role: dev-lead
+    name: orchestrator
+    approved: true
+    date: 2026-05-27
+    notes: "Plan layer structure sound. Deployment script with validation, SPA routing, auto-start, and rollback approach verified. Ready for implementation."
+
+status: approved
+
+validation_checklist:
+  - item: "Implementation plan follows layer architecture (Script → Routing → Auto-Start → Doc)"
+    verified: true
+  - item: "Deployment script strategy is sound with pre-flight validation"
+    verified: true
+  - item: "SPA routing configuration (.htaccess) included and tested"
+    verified: true
+  - item: "Auto-start configuration approach documented"
+    verified: true
+  - item: "Rollback procedure clearly defined and tested"
+    verified: true
+  - item: "Dependency on REPO-004-US-001 documented (WAR file)"
+    verified: true
+  - item: "All prerequisites identified (Apache/Tomcat, permissions, disk space)"
+    verified: true
+  - item: "Documentation covers full deployment workflow"
+    verified: true
+
+notes: |
+  This plan outlines a four-layer deployment process:
+  - Layer 1: Deployment script with pre-flight validation
+  - Layer 2: SPA routing configuration and testing
+  - Layer 3: Auto-start configuration
+  - Layer 4: Complete documentation and troubleshooting guide
+  
+  Deployment is automated via deploy.sh with clear error handling,
+  validation checks prevent common failures, and rollback procedure
+  enables quick recovery if needed.
+  
+  Ready for dev-lead review and approval.

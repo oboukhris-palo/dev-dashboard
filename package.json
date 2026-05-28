@@ -1,0 +1,101 @@
+{
+    "name": "dev-dashboard",
+    "version": "2.1.0",
+    "description": "Your Local Repository Command Center - Desktop App",
+    "main": "electron/main.js",
+    "author": "Palo IT",
+    "license": "MIT",
+    "private": true,
+    "scripts": {
+        "postinstall": "cd src/backend && npm install && npm run build && cd ../frontend && npm install",
+        "start": "electron .",
+        "dev": "concurrently \"cd src/backend && npm run dev\" \"cd src/frontend && npm start\" \"wait-on http://localhost:4200 && electron .\"",
+        "build": "npm run build:backend && npm run build:frontend",
+        "build:backend": "cd src/backend && npm run build",
+        "build:frontend": "cd src/frontend && npx ng build --configuration production --output-path=dist/dev-dashboard/browser",
+        "build:prod": "npm run build:backend && cd src/frontend && npx ng build --configuration production --output-path=dist/dev-dashboard/browser --base-href=./",
+        "package": "npm run build:prod && electron-builder",
+        "package:mac": "npm run build:prod && electron-builder --mac",
+        "package:win": "npm run build:prod && electron-builder --win",
+        "package:linux": "npm run build:prod && electron-builder --linux",
+        "test": "cd src/frontend && npm test",
+        "test:backend": "cd src/backend && npm test",
+        "test:frontend": "cd src/frontend && npm test"
+    },
+    "dependencies": {
+        "express": "^4.18.2",
+        "cors": "^2.8.5",
+        "dotenv": "^16.3.1"
+    },
+    "devDependencies": {
+        "electron": "^28.0.0",
+        "electron-builder": "^24.9.1",
+        "concurrently": "^8.2.2",
+        "wait-on": "^7.2.0"
+    },
+    "build": {
+        "appId": "com.paloit.dev-dashboard",
+        "productName": "Dev Dashboard",
+        "directories": {
+            "output": "release",
+            "buildResources": "build"
+        },
+        "files": [
+            "electron/**/*",
+            "src/backend/dist/**/*",
+            "src/backend/.env.example",
+            "src/frontend/dist/dev-dashboard/browser/**/*",
+            "!src/backend/node_modules",
+            "!src/frontend/node_modules"
+        ],
+        "extraResources": [
+            {
+                "from": "src/backend/.env.example",
+                "to": ".env.example"
+            }
+        ],
+        "mac": {
+            "category": "public.app-category.developer-tools",
+            "target": [
+                "dmg",
+                "zip"
+            ],
+            "icon": "build/icon.icns"
+        },
+        "win": {
+            "target": [
+                "nsis",
+                "portable"
+            ],
+            "icon": "build/icon.ico"
+        },
+        "linux": {
+            "category": "Development",
+            "target": [
+                "AppImage",
+                "deb"
+            ],
+            "icon": "build/icon.png"
+        },
+        "dmg": {
+            "contents": [
+                {
+                    "x": 130,
+                    "y": 220
+                },
+                {
+                    "x": 410,
+                    "y": 220,
+                    "type": "link",
+                    "path": "/Applications"
+                }
+            ]
+        },
+        "nsis": {
+            "oneClick": false,
+            "allowToChangeInstallationDirectory": true,
+            "createDesktopShortcut": true,
+            "createStartMenuShortcut": true
+        }
+    }
+}

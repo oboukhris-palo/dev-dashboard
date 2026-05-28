@@ -1,0 +1,74 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "checkpoint.yaml",
+  "description": "Canonical schema for .github/checkpoint.yaml — sole PDLC position tracker. Updated at every phase transition and TDD cycle.",
+  "type": "object",
+  "required": ["project_state"],
+  "properties": {
+    "project_state": {
+      "type": "object",
+      "required": ["current_phase", "phase_status"],
+      "properties": {
+        "current_phase": {
+          "type": "string",
+          "enum": ["00-assessment", "01-requirements", "02-architecture", "03-testing", "04-planning", "05-implementation"],
+          "description": "Active PDLC phase folder name"
+        },
+        "phase_status": {
+          "type": "string",
+          "enum": ["in_progress", "complete", "blocked"],
+          "description": "Status of the current phase"
+        },
+        "last_gate_passed": { "type": ["string", "null"] },
+        "last_gate_date": { "type": ["string", "null"], "format": "date" },
+        "last_gate_score": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },
+        "next_expected_gate": { "type": ["string", "null"] },
+        "routing_strategy": {
+          "type": ["string", "null"],
+          "enum": ["route_a", "route_b", "route_c", "route_d", null],
+          "description": "Documentation route selected during Phase 0 assessment"
+        },
+        "artifacts_location": { "type": ["string", "null"] }
+      }
+    },
+    "sub_phase": { "type": ["string", "null"] },
+    "active_epic": { "type": ["string", "null"], "description": "e.g. EPIC-001" },
+    "active_story": { "type": ["string", "null"], "description": "e.g. US-045" },
+    "current_layer": { "type": ["string", "null"], "description": "e.g. Layer 1 (Domain)" },
+    "current_cycle": { "type": ["integer", "null"], "minimum": 1 },
+    "active_tdd_cycle": {
+      "type": ["object", "null"],
+      "properties": {
+        "phase": { "type": "string", "enum": ["RED", "GREEN", "REFACTOR"] },
+        "cycle_number": { "type": "integer", "minimum": 1 },
+        "layer": { "type": "string" }
+      }
+    },
+    "last_updated": { "type": ["string", "null"], "format": "date" },
+    "last_agent": { "type": ["string", "null"] },
+    "ai_model_in_use": { "type": ["string", "null"] },
+    "generated_files": { "type": "array", "items": { "type": "string" } },
+    "blockers": { "type": "array", "items": { "type": "string" } },
+    "decision_gates_pending": { "type": "array", "items": { "type": "string" } },
+    "notes": { "type": ["string", "null"] },
+    "orchestrator_decisions": {
+      "type": "array",
+      "description": "Append-only audit log of orchestrator decisions and phase transitions",
+      "items": {
+        "type": "object",
+        "required": ["timestamp", "entry_type", "recorded_by"],
+        "properties": {
+          "timestamp": { "type": "string" },
+          "entry_type": { "type": "string", "enum": ["phase_transition", "gate_result", "rework", "decision"] },
+          "phase": { "type": ["string", "null"] },
+          "transition": { "type": ["string", "null"] },
+          "gate_result": { "type": ["string", "null"] },
+          "rework": { "type": ["string", "null"] },
+          "recorded_by": { "type": "string" },
+          "workflow_ref": { "type": ["string", "null"] },
+          "git_commit": { "type": ["string", "null"] }
+        }
+      }
+    }
+  }
+}

@@ -100,7 +100,7 @@ describe('RepositoryStateService', () => {
 
     it('should set loading false on error', () => {
       scannerSpy.scanWorkspaces.and.returnValue(throwError(() => new Error('Scan failed')));
-      service.scanWorkspaces().subscribe({ error: () => {} });
+      service.scanWorkspaces().subscribe({ error: () => { /* Expected error */ } });
 
       let loading = true;
       service.loading$.pipe(take(1)).subscribe(l => loading = l);
@@ -109,7 +109,7 @@ describe('RepositoryStateService', () => {
 
     it('should set error message in store on failure', () => {
       scannerSpy.scanWorkspaces.and.returnValue(throwError(() => new Error('Connection error')));
-      service.scanWorkspaces().subscribe({ error: () => {} });
+      service.scanWorkspaces().subscribe({ error: () => { /* Expected error */ } });
 
       let error: string | null = null;
       service.error$.pipe(take(1)).subscribe(e => error = e);

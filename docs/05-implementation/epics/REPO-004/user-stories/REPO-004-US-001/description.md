@@ -22,24 +22,18 @@ story_points: 5
 
 ## Acceptance Criteria
 
-- [ ] Angular production build creates optimized bundle
-- [ ] Build output is packaged as WAR file
-- [ ] WAR file is self-contained (no external dependencies)
-- [ ] Build script documented in README
+**Given** the Angular application source code in `src/frontend/`  
+**When** the production build command is executed  
+**Then** all the following criteria must be satisfied:
 
----
-
-## BDD Scenarios
-
-```gherkin
-Feature: Production Build
-
-  Scenario: Build WAR file
-    Given the Angular application source code
-    When I run the production build command
-    Then a WAR file is created in the output directory
-    And the WAR file contains all necessary assets
-```
+- [ ] Angular production build creates optimized bundle (< 5MB uncompressed)
+- [ ] Build output is packaged as WAR file at `./dev-dashboard.war`
+- [ ] WAR file is self-contained (includes all assets, manifests, web.xml)
+- [ ] Build script documented in README with `npm run package:war` command
+- [ ] Build completes in < 2 minutes
+- [ ] Source maps are excluded from production build
+- [ ] Dead code elimination (tree-shaking) is applied
+- [ ] Output includes all necessary Angular assets (JS, CSS, HTML, images)
 
 ---
 
@@ -91,6 +85,16 @@ Feature: Production Build
 
 ## Implementation Notes
 
+---
+
+## Test Strategy
+
+**Manual Verification (YOLO Mode):**
+- [ ] Run `npm run package:war` and verify no errors
+- [ ] Verify WAR file exists at `./dev-dashboard.war` with file size < 5MB
+- [ ] Unzip WAR and verify index.html, main.*.js, and styles.*.css are present
+- [ ] Verify web.xml is present in META-INF/
+
 **Build Script (package.json):**
 ```json
 {
@@ -131,32 +135,18 @@ zip -r ../../dev-dashboard.war *
 
 ---
 
-## Test Strategy
+---
 
-**Unit Tests:**
-- Test build configuration is correct
-- Test optimization flags are enabled
-- Test output hashing is applied
+## Definition of Ready Checklist
 
-**Integration Tests:**
-- Test full build process completes successfully
-- Test WAR file creation
-- Test WAR file contains all expected assets
-- Test WAR file size is within limits (< 5MB)
-
-**BDD Tests:**
-- Implement Gherkin scenario above
-- Verify WAR file is created in output directory
-- Verify WAR file contains all necessary assets
-
-**Performance Tests:**
-- Measure build time (target: < 2 minutes)
-- Measure bundle size (target: < 5MB)
-
-**Manual Verification:**
-- Extract WAR file and inspect contents
-- Verify all assets present (HTML, JS, CSS, images)
-- Verify no source maps included (sourceMap: false)
+- [x] Story has clear, testable acceptance criteria
+- [x] Technical assumptions documented (AOT, tree-shaking, minification, < 2min build time)
+- [x] Build performance constraints specified (< 2 minutes, < 5MB)
+- [x] No BDD scenarios required (YOLO mode - acceptance criteria in plain text)
+- [x] Acceptance criteria are measurable and verifiable
+- [x] Dependencies identified (REPO-001-003 must be complete)
+- [x] Build script template provided (package.json)
+- [x] Ready for Dev-Lead Phase 3 (Implementation Planning)
 
 ---
 

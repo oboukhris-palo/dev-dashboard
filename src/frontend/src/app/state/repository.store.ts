@@ -1,6 +1,8 @@
-import { createStore, select, withProps } from '@ngneat/elf';
-import { withEntities, selectAllEntities, setEntities, updateEntities, deleteEntities } from '@ngneat/elf-entities';
+import { createStore, withProps, select } from '@ngneat/elf';
+import { withEntities, selectAllEntities, updateEntities } from '@ngneat/elf-entities';
 import { Repository, ScanResult } from '@domain/index';
+import { ProjectPhase } from '@domain/phase.enum';
+import { ProjectStatus } from '@domain/status.enum';
 
 /**
  * Repository State Interface
@@ -24,6 +26,16 @@ export interface RepositoryState {
    * Error message if scan failed
    */
   error: string | null;
+
+  /**
+   * Currently editing repository ID
+   */
+  editingId: string | null;
+
+  /**
+   * Edit values cache for each repository
+   */
+  editValues: Record<string, string>;
 }
 
 /**
@@ -46,7 +58,9 @@ export const repositoryStore = createStore(
   withProps<RepositoryState>({
     loading: false,
     lastScan: null,
-    error: null
+    error: null,
+    editingId: null,
+    editValues: {}
   })
 );
 
@@ -83,3 +97,58 @@ export const repositoriesCount$ = repositoryStore.pipe(
   selectAllEntities(),
   select(repos => repos.length)
 );
+
+/**
+ * Store Update Actions - Metadata Management
+ */
+
+/**
+ * Update repository description
+ */
+export function updateDescription(id: string, description: string): void {
+  const trimmed = description.trim().substring(0, 500);
+  repositoryStore.update(updateEntities(id, { metadata: { description: trimmed } }));
+  repositoryStore.update((state) => ({
+    ...state,
+    editingId: null,
+    editValues: { ...state.editValues }
+  }));
+}
+
+/**
+ * Update repository phase
+ */
+export function updatePhase(id: string, phase: ProjectPhase): void {
+  repositoryStore.update(updateEntities(id, { metadata: { phase } }));
+}
+
+/**
+ * Update repository status
+ */
+export function updateStatus(id: string, status: ProjectStatus): void {
+  repositoryStore.update(updateEntities(id, { metadata: { status } }));
+}
+
+/**
+ * Set editing mode
+ */
+export function setEditing(id: string | null, value: string = ''): void {
+  if (id) {
+    repositoryStore.update((state) => ({
+      ...state,
+      editingId: id,
+      editValues: { ...state.editValues, [id]: value }
+    }));
+  } else {
+    repositoryStore.update((state) => ({
+      ...state,
+      editingId: null
+    }));
+  }
+}
+
+/**
+ * Select editing state
+ */
+export const editingId$ = repositoryStore.pipe(select(state => state.editingId));
+export const editValues$ = repositoryStore.pipe(select(state => state.editValues));

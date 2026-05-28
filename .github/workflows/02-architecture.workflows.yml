@@ -1,0 +1,202 @@
+# 02-architecture.workflows.yml
+# Architecture & Design Workflow — Phases 3-4
+# Converted from 02-architecture.workflows.md (compact YAML, behaviour preserved)
+
+workflow_id: ARCHITECTURE-001
+phase: "02-architecture"
+name: "Architecture & Design (Phases 3-4)"
+
+metadata:
+  pdlc_phases: [3, 4]
+  output_location: "docs/02-architecture/"
+  input: "01-requirements gate passed"
+  handoff_to: "03-testing.workflows.yml"
+  agents: [architect, ux, po, dev-lead, pm, ai-engineering]
+  log_path: "logs/02-architecture/agent-{name}-YYYYMMDD.md"
+  quality_gate: ".github/gates/gate-02-architecture.md"
+
+# ── Conditions (branching based on framework-config.mjs) ─────────────────────
+conditions:
+  ddd_mode_on:
+    flag: "config.development_modes.dddMode == true"
+    behaviour: "Architect defines bounded contexts, aggregates, domain events in architecture-design.md. Tech spec must include aggregate schemas."
+    affected_steps: [architect-design, architect-tech-spec]
+  ddd_mode_off:
+    flag: "config.development_modes.dddMode == false"
+    behaviour: "Standard layered architecture. No DDD artefacts required."
+    affected_steps: [architect-design]
+    modification: "Skip DDD bounded-context section in architecture-design.md."
+  bdd_mode_on:
+    flag: "config.development_modes.bddMode == true"
+    behaviour: "BA contributes API contract scenarios. Tech spec must be precise enough to write Gherkin tests."
+    affected_steps: [architect-tech-spec]
+  experimental_or_local_dev:
+    project_types: [experimental, local-dev]
+    behaviour: "Lightweight: quick tech decision doc only. Skip UX, design systems, formal estimation."
+    stages_active: [stage_3_lightweight]
+
+artifacts:
+  templates:
+    - .github/templates/tech-doc-tmpl.yml
+    - .github/templates/api-specification-tmpl.md
+    - .github/templates/agent-log-tmpl.md
+    - .github/templates/gate-report-tmpl.md
+    - .github/templates/epic-tmpl.yml
+    - .github/templates/user-story-tmpl.yml
+  gates:
+    - .github/gates/gate-02-architecture.md
+  guides:
+    - .github/guides/gate-blocker-resolution.guide.md
+    - .github/guides/diagram-usage.guide.md
+  instructions:
+    - .github/instructions/api-design.instructions.md
+    - .github/instructions/documentation.instructions.md
+    - .github/instructions/framework-standards.instructions.md
+    - .github/instructions/agent-logging.instructions.md
+    - .github/instructions/estimation.instructions.md
+  scripts:
+    - .github/scripts/update-decision-trail.mjs
+    - .github/scripts/generate-dashboard.mjs
+
+output_structure:
+  "docs/02-architecture/architecture-design.md": "System architecture & constraints"
+  "docs/02-architecture/tech-spec.md":            "API contracts, DB schema, technical specifications"
+  "docs/02-architecture/design-systems.md":       "UI/UX components & design tokens"
+  "docs/02-architecture/flow-diagrams.md":         "Process & workflow diagrams"
+  "docs/02-architecture/journey-maps.md":          "User journey visualizations"
+  "docs/02-architecture/figma-design-link.md":     "Links to Figma/Penpot design artifacts"
+
+# ── Stages ────────────────────────────────────────────────────────────────────
+stages:
+  - id: stage_3_lightweight
+    name: "Lightweight Architecture Decision (experimental/local-dev)"
+    if: "project_type IN [experimental, local-dev]"
+    steps:
+      - id: architect-quick-decision
+        agent: architect
+        action: "Document tech stack decision in architecture-design.md (1-2 pages). No formal UX or design system required."
+        outputs: ["docs/02-architecture/architecture-design.md"]
+
+  - id: stage_3
+    name: "Design & Architecture"
+    if: "project_type NOT IN [experimental, local-dev]"
+    inputs: ["requirements.md", "personas.md", "business-case.md (approved)"]
+    outputs: ["journey-maps.md", "blueprints.md", "architecture-design.md", "flow-diagrams.md"]
+    agents: [ux, po, architect, ba]
+    steps:
+      - id: ux-journey-maps
+        agent: ux
+        action: "Create journey-maps.md per persona. PO validates alignment with requirements."
+        outputs: ["docs/02-architecture/journey-maps.md"]
+      - id: ux-blueprints
+        agent: ux
+        action: "Create blueprints.md (wireframes, IA). PO approves."
+        outputs: ["docs/02-architecture/blueprints.md"]
+      - id: architect-design
+        agent: architect
+        action_base: "Create architecture-design.md — system overview, modularity, scalability, resilience patterns, constraints."
+        action_ddd_addon: "Add bounded context map, aggregate list, domain events when dddMode=true."
+        outputs: ["docs/02-architecture/architecture-design.md"]
+      - id: architect-flow-diagrams
+        agent: architect
+        action: "Create flow-diagrams.md using Mermaid (preferred) or PlantUML."
+        ref: ".github/guides/diagram-usage.guide.md"
+        outputs: ["docs/02-architecture/flow-diagrams.md"]
+      - id: ux-figma-design
+        agent: ux
+        action: "Create high-fidelity designs in Figma/Penpot for major user flows. 1-2 stakeholder iteration rounds. Link in figma-design-link.md."
+        outputs: ["docs/02-architecture/figma-design-link.md"]
+    approval_gate:
+      criteria:
+        - "Journeys align with personas"
+        - "Stories trace to requirements"
+        - "Blueprints support stories"
+        - "Architecture supports requirements"
+        - "Flows connect journeys to architecture"
+        - "Designs validated with stakeholders"
+
+  - id: stage_3_5
+    name: "Story Estimation & Cost Analysis (PM-Led)"
+    if: "project_type NOT IN [experimental, local-dev]"
+    ref: ".github/instructions/estimation.instructions.md"
+    agents: [pm, architect, orchestrator]
+    steps:
+      - id: pm-story-context-assessment
+        agent: pm
+        action: "5-point checklist per story. Score context quality (0-100%). Apply multiplier: 80-100%=×0.8, 60-79%=×1.1, 40-59%=×1.7, <40%=×3.0+"
+      - id: pm-layer-breakdown-estimation
+        agent: pm
+        action: "Base hours by layer (Domain/Service/API/UI). Apply context × skill factor from .github/team-profile.yml (internal only)."
+      - id: pm-integration-risk
+        agent: pm
+        action: "Add integration buffers: isolated +10-15%, dependencies +25-40%, external APIs +20-100%."
+      - id: pm-epic-aggregation
+        agent: pm
+        action: "Roll up to epic totals. Generate 3-scenario forecast (Conservative/Balanced/Aggressive)."
+      - id: orchestrator-estimation-validation
+        agent: orchestrator
+        action: "Validate estimates. Enforce privacy (no team names in story YAML). Pre-approve."
+
+  - id: stage_4
+    name: "Development Planning"
+    if: "project_type NOT IN [experimental, local-dev]"
+    inputs: ["All Stage 3 docs + Stage 3.5 estimates"]
+    outputs: ["tech-spec.md", "design-systems.md", "code-generation.md"]
+    agents: [architect, dev-lead, ux]
+    steps:
+      - id: architect-tech-spec
+        agent: architect
+        action_base: "Create tech-spec.md — API contracts (OpenAPI), DB schema, auth patterns, integration specs."
+        action_bdd_addon: "Ensure API spec is Gherkin-testable when bddMode=true (precise request/response examples)."
+        action_ddd_addon: "Include aggregate schemas, domain event contracts when dddMode=true."
+        ref: ".github/instructions/api-design.instructions.md"
+        outputs: ["docs/02-architecture/tech-spec.md"]
+      - id: dev-lead-tech-spec-review
+        agent: dev-lead
+        action: "Review tech spec for implementation feasibility. Finalize specs."
+      - id: ux-design-systems
+        agent: ux
+        action: "Create design-systems.md — design tokens, component library, patterns. Dev-Lead validates feasibility."
+        outputs: ["docs/02-architecture/design-systems.md"]
+      - id: dev-lead-code-generation
+        agent: dev-lead
+        action: "Create code-generation.md — scaffolding templates, code patterns, generator configurations."
+        outputs: ["docs/02-architecture/code-generation.md"]
+    approval_gate:
+      criteria:
+        - "Tech specs complete with API contracts"
+        - "Design systems clear with tokens"
+        - "Code generation strategy consistent"
+        - "Architecture constraints reflected in tech spec"
+
+# ── Phase Exit ────────────────────────────────────────────────────────────────
+exit:
+  gate: ".github/gates/gate-02-architecture.md"
+  pass_criteria:
+    - "architecture-design.md approved"
+    - "tech-spec.md with OpenAPI spec"
+    - "design-systems.md complete"
+    - "DDD artefacts present (if dddMode=true)"
+  on_pass: "Proceed to 03-testing.workflows.yml"
+  on_conditional: "Iterate design with stakeholders; re-run gate within 3 days"
+  on_fail: "BLOCK — see .github/guides/gate-blocker-resolution.guide.md"
+
+logging:
+  mandatory: true
+  template: ".github/templates/agent-log-tmpl.md"
+  paths:
+    architect:      "logs/02-architecture/agent-architect-YYYYMMDD.md"
+    ux:             "logs/02-architecture/agent-ux-YYYYMMDD.md"
+    ai-engineering: "logs/02-architecture/agent-ai-engineering-YYYYMMDD.md"
+    pm:             "logs/02-architecture/agent-pm-YYYYMMDD.md"
+    dev-lead:       "logs/02-architecture/agent-dev-lead-YYYYMMDD.md"
+    orchestrator:   "logs/02-architecture/agent-orchestrator-YYYYMMDD.md"
+
+checkpoint:
+  on_entry:        "current_phase: '02-architecture', phase_status: 'in_progress'"
+  on_docs_created: "add 'gate-architecture' to decision_gates_pending"
+  on_gate_pass:    "last_gate_passed: 'gate-architecture', phase_status: 'complete'"
+
+status: ACTIVE
+version: "3.0"
+last_updated: "2026-05-22"

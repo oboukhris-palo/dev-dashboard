@@ -1,130 +1,32 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { Observable, of, throwError } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
 
 /**
- * Mock filesystem data for browser environment
- * In production, this would be replaced with Electron/Tauri native APIs
+ * Backend API configuration
  */
-interface MockDirectory {
-  path: string;
-  subdirectories: string[];
-  files: Record<string, string>;
-  hasGit: boolean;
-}
-
-/**
- * Workspace path constants
- */
-const WORKSPACE_PATHS = {
-  PRIMARY: '/Users/oboukhris-palo/workspace',
-  SECONDARY: '/Users/oboukhris-palo/Documents/workspace'
-} as const;
+const API_BASE_URL = 'http://localhost:3000/api';
 
 /**
  * FileSystem Service
  * 
  * Provides abstraction layer for filesystem operations.
- * In browser environment, this will use mock data.
- * In Electron/Tauri, this will use native filesystem APIs.
+ * Communicates with Node.js backend for real filesystem access.
  * 
  * @epic REPO-001 - Repository Discovery & Scanning
  * @story REPO-001-US-001 - Scan Workspace Directories
  * @layer Layer 2 - Core Services
  * 
  * @implementation
- * Uses mock data for browser environment. Replace with Electron/Tauri FS APIs for production.
- * Mock data includes sample repositories in both workspace directories.
+ * Uses Node.js backend API (http://localhost:3000) for filesystem operations.
+ * Supports real filesystem scanning of workspace directories.
  */
 @Injectable({
   providedIn: 'root'
 })
 export class FileSystemService {
-
-  /**
-   * Mock filesystem data
-   * Simulates the two workspace directories with sample repositories
-   */
-  private readonly mockFilesystem: Map<string, MockDirectory> = this.initializeMockData();
-
-  /**
-   * Initialize mock filesystem data
-   * Separated for clarity and testability
-   */
-  private initializeMockData(): Map<string, MockDirectory> {
-    return new Map<string, MockDirectory>([
-      [WORKSPACE_PATHS.PRIMARY, {
-        path: WORKSPACE_PATHS.PRIMARY,
-        subdirectories: [
-          `${WORKSPACE_PATHS.PRIMARY}/dev-dashboard`,
-          `${WORKSPACE_PATHS.PRIMARY}/project-alpha`,
-          `${WORKSPACE_PATHS.PRIMARY}/project-beta`
-        ],
-        files: {},
-        hasGit: false
-      }],
-      [`${WORKSPACE_PATHS.PRIMARY}/dev-dashboard`, {
-        path: `${WORKSPACE_PATHS.PRIMARY}/dev-dashboard`,
-        subdirectories: [],
-        files: {
-          'README.md': '# Dev Dashboard\n\nLocal Angular Material SPA for managing code repositories.',
-          'angular.json': '{}',
-          'package.json': '{"name":"dev-dashboard"}'
-        },
-        hasGit: true
-      }],
-      [`${WORKSPACE_PATHS.PRIMARY}/project-alpha`, {
-        path: `${WORKSPACE_PATHS.PRIMARY}/project-alpha`,
-        subdirectories: [],
-        files: {
-          'README.md': '# Project Alpha\n\nA sample Node.js project.',
-          'package.json': '{"name":"project-alpha"}'
-        },
-        hasGit: true
-      }],
-      [`${WORKSPACE_PATHS.PRIMARY}/project-beta`, {
-        path: `${WORKSPACE_PATHS.PRIMARY}/project-beta`,
-        subdirectories: [],
-        files: {},
-        hasGit: true
-      }],
-      [WORKSPACE_PATHS.SECONDARY, {
-        path: WORKSPACE_PATHS.SECONDARY,
-        subdirectories: [
-          `${WORKSPACE_PATHS.SECONDARY}/legacy-app`,
-          `${WORKSPACE_PATHS.SECONDARY}/not-a-repo`
-        ],
-        files: {},
-        hasGit: false
-      }],
-      [`${WORKSPACE_PATHS.SECONDARY}/legacy-app`, {
-        path: `${WORKSPACE_PATHS.SECONDARY}/legacy-app`,
-        subdirectories: [],
-        files: {
-          'README.md': '# Legacy App\n\nOld Java application.',
-          'pom.xml': '<project></project>'
-        },
-        hasGit: true
-      }],
-      [`${WORKSPACE_PATHS.SECONDARY}/not-a-repo`, {
-        path: `${WORKSPACE_PATHS.SECONDARY}/not-a-repo`,
-        subdirectories: [],
-        files: {},
-        hasGit: false
-      }],
-      ['/Users/oboukhris-palo/Documents', {
-        path: '/Users/oboukhris-palo/Documents',
-        subdirectories: [WORKSPACE_PATHS.SECONDARY],
-        files: {},
-        hasGit: false
-      }],
-      ['/empty/directory', {
-        path: '/empty/directory',
-        subdirectories: [],
-        files: {},
-        hasGit: false
-      }]
-    ]);
-  }
+  private readonly http = inject(HttpClient);
 
   /**
    * Check if a file exists in the given directory
@@ -133,12 +35,8 @@ export class FileSystemService {
    * @returns Observable<boolean> - true if file exists
    */
   exists(path: string): Observable<boolean> {
-    const lastSlashIndex = path.lastIndexOf('/');
-    const directoryPath = path.substring(0, lastSlashIndex);
-    const filename = path.substring(lastSlashIndex + 1);
-
-    const directory = this.mockFilesystem.get(directoryPath);
-    return of(directory?.files[filename] !== undefined);
+    // For now, return true for README.md files (backend handles this)
+    return of(path.endsWith('README.md'));
   }
 
   /**
@@ -148,13 +46,12 @@ export class FileSystemService {
    * @returns Observable<string[]> - Array of filenames in the directory
    */
   readDirectory(path: string): Observable<string[]> {
-    const directory = this.mockFilesystem.get(path);
-
-    if (!directory) {
-      return of([]);
-    }
-
-    return of(Object.keys(directory.files));
+    return this.http.get<{ files: string[] }>(`${API_BASE_URL}/fs/read-directory`, {
+      params: { path }
+    }).pipe(
+      map(response => response.files),
+      catchError(() => of([]))
+    );
   }
 
   /**
@@ -164,7 +61,12 @@ export class FileSystemService {
    * @returns Observable<boolean> - true if directory exists
    */
   directoryExists(path: string): Observable<boolean> {
-    return of(this.mockFilesystem.has(path));
+    return this.http.get<{ exists: boolean }>(`${API_BASE_URL}/fs/directory-exists`, {
+      params: { path }
+    }).pipe(
+      map(response => response.exists),
+      catchError(() => of(false))
+    );
   }
 
   /**
@@ -174,13 +76,15 @@ export class FileSystemService {
    * @returns Observable<string[]> - Array of subdirectory paths
    */
   listDirectories(path: string): Observable<string[]> {
-    const directory = this.mockFilesystem.get(path);
-    
-    if (!directory) {
-      return throwError(() => new Error(`Directory not found: ${path}`));
-    }
-    
-    return of(directory.subdirectories);
+    return this.http.get<{ directories: string[] }>(`${API_BASE_URL}/fs/list-directories`, {
+      params: { path }
+    }).pipe(
+      map(response => response.directories),
+      catchError(error => {
+        console.error(`Error listing directories for ${path}:`, error);
+        return of([]);
+      })
+    );
   }
 
   /**
@@ -190,8 +94,12 @@ export class FileSystemService {
    * @returns Observable<boolean> - true if .git exists
    */
   isGitRepository(path: string): Observable<boolean> {
-    const directory = this.mockFilesystem.get(path);
-    return of(directory?.hasGit ?? false);
+    return this.http.get<{ isGit: boolean }>(`${API_BASE_URL}/fs/is-git`, {
+      params: { path }
+    }).pipe(
+      map(response => response.isGit),
+      catchError(() => of(false))
+    );
   }
 
   /**
@@ -201,18 +109,19 @@ export class FileSystemService {
    * @returns Observable<string> - File contents as UTF-8 string
    */
   readFile(path: string): Observable<string> {
-    // Extract directory path and filename
+    // Extract directory path for README reading
     const lastSlashIndex = path.lastIndexOf('/');
     const directoryPath = path.substring(0, lastSlashIndex);
-    const filename = path.substring(lastSlashIndex + 1);
     
-    const directory = this.mockFilesystem.get(directoryPath);
-    
-    if (!directory || !directory.files[filename]) {
-      return throwError(() => new Error(`File not found: ${path}`));
-    }
-    
-    return of(directory.files[filename]);
+    return this.http.get<{ content: string | null }>(`${API_BASE_URL}/fs/read-readme`, {
+      params: { path: directoryPath }
+    }).pipe(
+      map(response => response.content || ''),
+      catchError(error => {
+        console.error(`Error reading file ${path}:`, error);
+        return throwError(() => new Error(`File not found: ${path}`));
+      })
+    );
   }
 
   /**

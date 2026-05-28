@@ -20,6 +20,52 @@ npm start
 
 Navigate to `http://localhost:4200/`
 
+## 🚀 Deployment to Apache
+
+Deploy the application to your local Apache/Tomcat service:
+
+```bash
+# Build WAR and deploy (all-in-one)
+npm run deploy
+
+# Or deploy a pre-built WAR
+./scripts/deploy.sh
+
+# Rollback to previous version if needed
+npm run deploy:rollback
+```
+
+Application available at: `http://localhost:8080/dev-dashboard/`
+
+For detailed deployment guide, see [DEPLOYMENT.md](./DEPLOYMENT.md)
+
+## ✨ Features
+
+### Repository Discovery & Metadata Extraction
+
+The application automatically discovers git repositories in configured workspace directories and extracts metadata:
+
+**Scanning** (REPO-001-US-001):
+- Recursive directory traversal with configurable depth (max 5 levels)
+- Parallel scanning of multiple workspace paths using RxJS `forkJoin`
+- Exclude patterns support (e.g., `node_modules`, `.git`)
+- Performance target: < 5 seconds for 100+ repositories
+
+**Metadata Extraction** (REPO-001-US-002):
+- **Repository name**: Extracted from directory name
+- **README parsing**: Automatically reads `README.md` from repository root
+- **Description**: First paragraph extracted and cleaned
+  - Markdown formatting stripped (bold, italic, headers, links, code)
+  - Truncated to 200 characters maximum
+  - Handles missing README gracefully (empty description)
+- **README existence flag**: Tracks whether `README.md` is present
+
+**Implementation Details**:
+- `ReadmeParserService`: Pure markdown-to-plaintext parsing
+- `MetadataExtractorService`: Orchestrates file reading and enrichment
+- `RepositoryScannerService`: Integrates metadata extraction into scan workflow
+- Observable-based API for reactive data flow
+
 ## 📁 Project Structure
 
 ```
@@ -32,7 +78,9 @@ src/
 │   ├── services/            # Layer 2: Core Services
 │   │   ├── filesystem.service.ts
 │   │   ├── workspace-config.service.ts
-│   │   └── repository-scanner.service.ts
+│   │   ├── repository-scanner.service.ts
+│   │   ├── readme-parser.service.ts
+│   │   └── metadata-extractor.service.ts
 │   ├── state/               # Layer 3: State Management
 │   │   ├── repository.store.ts
 │   │   └── repository-state.service.ts
@@ -304,6 +352,10 @@ Internal project - Palo IT Labs
 
 ---
 
-**Sprint 1 Status:** Ready for Implementation 🚀  
-**Target:** REPO-001-US-001 & REPO-001-US-002 (8 SP)  
-**Timeline:** May 8-14, 2026
+**Sprint 1 Status:** ✅ REPO-001-US-002 Complete | 5/8 SP Delivered 🚀  
+**Completed:**
+- ✅ REPO-001-US-001: Scan Workspace Directories (5 SP)
+- ✅ REPO-001-US-002: Extract Repository Metadata (3 SP)
+
+**Next:** REPO-001-US-003 — Detect Tech Stack  
+**Timeline:** Sprint 1 (May 8-14, 2026)

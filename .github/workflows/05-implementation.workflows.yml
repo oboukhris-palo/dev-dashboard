@@ -1,0 +1,307 @@
+# 05-implementation.workflows.yml
+# Implementation Workflow — Phase 8 (TDD Execution)
+# Converted from 05-implementation.workflows.md (compact YAML, behaviour preserved)
+# Full detail ref: 05-implementation.workflows.md (archive)
+
+workflow_id: IMPLEMENTATION-001
+phase: "05-implementation"
+name: "Implementation & Development Execution (Phase 8)"
+
+metadata:
+  pdlc_phase: 8
+  output_location: "docs/05-implementation/"
+  input: "04-planning gate passed"
+  agents: [pm, po, ba, dev-lead, dev-tdd, dev-tdd-red, dev-tdd-green, dev-tdd-refactor, qa, orchestrator]
+  log_path: "logs/05-implementation/epics/<EPIC-REF>/user-stories/<US-REF>/agent-{name}-YYYYMMDD.md"
+  quality_gate: ".github/gates/gate-05-implementation.md"
+
+# ── BACKWARD COMPATIBILITY ────────────────────────────────────────────────────
+# If framework-config.mjs is absent or any flag is missing: default ALL modes to TRUE.
+defaults_if_missing:
+  tddMode: true
+  bddMode: true
+  dddMode: true
+  approvalMode: false  # derived: false when any dev mode is true
+
+# ── Conditions (branching based on framework-config.mjs) ─────────────────────
+conditions:
+  tdd_on:
+    flag: "config.development_modes.tddMode == true"
+    phase_4_behaviour: |
+      ENFORCE RED → GREEN → REFACTOR per layer, per cycle.
+      No implementation without failing test first.
+      1 commit per phase per cycle (TDD-<US-REF>-RED|GREEN|REFACTOR-<NN>).
+      Checkboxes in implementation-plan.md marked [x] after each phase.
+    affected_phases: [4_tdd_cycles]
+  tdd_off:
+    flag: "config.development_modes.tddMode == false"
+    phase_4_behaviour: |
+      Dev implements feature directly (no mandatory test-first).
+      Dev writes unit tests alongside or after implementation.
+      1 commit per feature layer. Simpler branch/commit strategy.
+    affected_phases: [4_direct_impl]
+
+  bdd_on:
+    flag: "config.development_modes.bddMode == true"
+    phase_2_behaviour: "BA enriches stories with Gherkin BDD scenarios (Given/When/Then). Validated before dev starts."
+    phase_3_behaviour: "Dev-Lead extracts .feature files from description.md. BDD tests run failing before TDD begins."
+    phase_4_behaviour: "TDD-RED reads .feature file as test scaffold. BDD assertion coverage tracked."
+    phase_6_behaviour: "QA validates all BDD scenarios pass in E2E. BDD pass rate is primary quality signal."
+    affected_phases: [2_enrichment, 3_planning, 4_tdd_cycles, 6_qa]
+  bdd_off:
+    flag: "config.development_modes.bddMode == false"
+    phase_2_behaviour: "BA verifies acceptance criteria text quality. No Gherkin required."
+    phase_3_behaviour: "No .feature files created. Dev writes test specs during implementation."
+    phase_4_behaviour: "Dev defines unit test specs independently. No BDD scaffold."
+    phase_6_behaviour: "QA validates acceptance criteria manually. Unit test coverage is quality signal."
+    affected_phases: [2_enrichment, 3_planning, 4_direct_impl, 6_qa]
+
+  ddd_on:
+    flag: "config.development_modes.dddMode == true"
+    phase_3_behaviour: "Layer 1 includes aggregate root, value objects, domain events per story. Architect reviews for bounded context compliance."
+    phase_4_behaviour: "TDD-RED writes domain layer tests first (aggregate + value objects). Domain events asserted in integration tests."
+    affected_phases: [3_planning, 4_tdd_cycles]
+  ddd_off:
+    flag: "config.development_modes.dddMode == false"
+    phase_3_behaviour: "Standard layered architecture (DB → Service → API → UI). No DDD artefacts required."
+    affected_phases: [3_planning]
+
+  approval_only:
+    flag: "config.development_modes.approvalMode == true (i.e. tdd+bdd+ddd all false)"
+    behaviour: |
+      plan-approval.yaml STILL mandatory (gates never skip).
+      Developer implements, tests, and delivers without TDD ceremony.
+      QA validates against acceptance criteria after implementation.
+      Simpler but lower quality assurance — suitable for experimental/local-dev.
+
+artifacts:
+  templates:
+    - .github/templates/implementation-plan-tmpl.md
+    - .github/templates/plan-approval-tmpl.yaml
+    - .github/templates/agent-log-tmpl.md
+    - .github/templates/gate-report-tmpl.md
+    - .github/templates/user-story-tmpl.yml
+    - .github/templates/layer-completion-checklist-tmpl.md
+    - .github/templates/code-review-checklist-tmpl.md
+    - .github/templates/user-stories-tracking-tmpl.md
+    - .github/templates/user-stories-status-tmpl.yml
+    - .github/templates/func-doc-tmpl.yml
+    - .github/templates/approval-block-tmpl.md
+    - .github/templates/decision-entry-tmpl.md
+    - .github/templates/sprint-planning-tmpl.md
+  gates:
+    - .github/gates/gate-05-implementation.md
+  guides:
+    - .github/guides/tdd-enforcement.guide.md
+    - .github/guides/gate-blocker-resolution.guide.md
+  instructions:
+    - .github/instructions/coding.instructions.md
+    - .github/instructions/documentation.instructions.md
+    - .github/instructions/api-design.instructions.md
+    - .github/instructions/agent-logging.instructions.md
+    - .github/instructions/git-workflow.instructions.md
+    - .github/instructions/framework-standards.instructions.md
+    - .github/instructions/epic-user-story-organization.instructions.md
+    - .github/instructions/test-strategy.instructions.md
+  patterns:
+    - .github/patterns/implementation/tdd-cycles/layer-by-layer-tdd.md
+    - .github/patterns/testing/bdd-scenarios/template-library.md
+  scripts:
+    - .github/scripts/update-decision-trail.mjs
+    - .github/scripts/setup-git-hooks.mjs
+
+folder_structure:
+  "docs/05-implementation/user-stories.md":                                            "SSOT — story status (Not Started/In Progress/Implemented/Delivered)"
+  "docs/05-implementation/current-sprint.md":                                          "Active sprint planning & daily tracking"
+  "docs/05-implementation/epics/{EPIC-REF}/description.md":                            "Epic overview (created by dev-lead)"
+  "docs/05-implementation/epics/{EPIC-REF}/user-stories/{US-REF}/description.md":      "Story definition copy from 01-requirements"
+  "docs/05-implementation/epics/{EPIC-REF}/user-stories/{US-REF}/implementation-plan.md": "Layer checkboxes (tracked in real time)"
+  "docs/05-implementation/epics/{EPIC-REF}/user-stories/{US-REF}/plan-approval.yaml":  "MANDATORY gate (approved before TDD starts)"
+  "docs/05-implementation/epics/{EPIC-REF}/user-stories/{US-REF}/features/*.feature":  "BDD .feature files (if bddMode=true)"
+
+# ── Sprint Phases ─────────────────────────────────────────────────────────────
+phases:
+  - id: phase_0_project_init
+    name: "PM Project & GitHub Initialization"
+    agent: pm
+    once: true
+    steps:
+      - id: pm-github-setup
+        action: "Verify GitHub repo access. Create docs/05-implementation/user-stories.md (mirrors PRD + status). Create docs/project-status.md."
+      - id: pm-epic-folders
+        action: "Create epic folder structure per epic in docs/05-implementation/epics/<EPIC-REF>/. Create description.md per epic referencing epic-tmpl.yml metadata."
+      - id: pm-github-issues
+        action: "Create GitHub Issue per user-story (title: '[{US-REF}] {Story Title}', acceptance criteria, BDD if bddMode=true). Tag with parent epic label."
+
+  - id: phase_1_sprint_planning
+    name: "PM Sprint Planning"
+    agent: pm
+    cadence: "each sprint start"
+    steps:
+      - id: pm-story-selection
+        action: |
+          READ /docs/01-requirements/user-stories.md to get EXACT US-REF identifiers.
+          NUMBERING RULE: Use exact US-REF format (e.g. US-001) — never abbreviate.
+          Present 3 scope options: Conservative (50-70%) / Balanced (70-100%) ⭐ / Stretch (100-120%).
+          Create /docs/05-implementation/current-sprint.md with selected stories.
+          POST-VALIDATION: Verify every US-REF in sprint matches docs/01-requirements/user-stories.md exactly.
+      - id: pm-github-sprint-labels
+        action: "Add 'Sprint-N' label to selected issues. Update project-status.md with sprint scope."
+
+  - id: phase_2_ba_enrichment
+    name: "BA Story Enrichment"
+    agent: ba
+    cadence: "per story, during sprint planning"
+    steps:
+      - id: ba-enrich-story
+        action_base: "Create/update description.md per story. Import PO acceptance criteria. Define API contracts."
+        action_bdd_on:  "Extract/write Gherkin BDD scenarios (Given/When/Then) per acceptance criterion. Validate coverage."
+        action_bdd_off: "Verify acceptance criteria are testable plain text. Flag ambiguous criteria."
+        action_ddd_on:  "Identify domain aggregates, value objects, domain events for each story."
+        action_ddd_off: "Standard enrichment only."
+        validation: "Complete DOR (Definition of Ready) checklist before handing to dev-lead."
+
+  - id: phase_3_implementation_planning
+    name: "Dev-Lead Implementation Plan Creation"
+    agent: dev-lead
+    cadence: "per story"
+    steps:
+      - id: devlead-create-plan
+        action_base: |
+          Create implementation-plan.md with 4 layers:
+          Layer 1 (Database/Domain): Schema, migrations, models
+          Layer 2 (Backend/Service): Endpoints, services, business logic
+          Layer 3 (Config/Integration): Routes, DI, middleware
+          Layer 4 (Frontend/UI): Components, state, styling
+          Checkboxes [ ] per task. BDD coverage mapping per layer.
+        action_ddd_on:  "Layer 1 MUST include: aggregate root, value objects, domain events schemas."
+        action_bdd_on:  "Extract .feature files from description.md. Create features/{domain}/{story-ref}.feature. Run BDD tests → expect FAIL."
+        action_bdd_off: "No .feature files. Document acceptance criteria test approach in plan."
+        action_tdd_on:  "Assign RED/GREEN/REFACTOR cycle count estimate per layer. Reference tdd-enforcement.guide.md."
+      - id: devlead-plan-approval
+        action: "Create plan-approval.yaml. MANDATORY gate — TDD/implementation CANNOT start until status=approved."
+        gate: "plan-approval.yaml must be approved before Phase 4 starts"
+      - id: devlead-numbering-validation
+        action: |
+          CRITICAL: Verify <US-REF> matches exactly across:
+          - docs/05-implementation/user-stories.md
+          - docs/05-implementation/epics/<EPIC-REF>/user-stories/<US-REF>/ (folder name)
+          - docs/01-requirements/user-stories.md (source of truth)
+          - GitHub Issue title ([US-XXX])
+          - current-sprint.md
+          If any divergence found: PAUSE and correct before proceeding.
+
+  - id: phase_4_tdd_cycles
+    name: "TDD Execution (tddMode=true)"
+    agent: dev-tdd  # orchestrates dev-tdd-red, dev-tdd-green, dev-tdd-refactor
+    if: "config.development_modes.tddMode == true"
+    prerequisite: "plan-approval.yaml status == 'approved'"
+    cadence: "per layer, per cycle"
+    steps:
+      - id: tdd-red
+        agent: dev-tdd-red
+        action_bdd_on:  "Write failing tests from .feature file (BDD scaffold). Assert BDD scenarios in test."
+        action_bdd_off: "Write failing unit tests from acceptance criteria. Define expected behaviour before code."
+        commit_format: "TDD-<US-REF>-RED-<NN>: <test description>"
+        checkpoint: "Mark checkbox [x] in implementation-plan.md for this task"
+      - id: tdd-green
+        agent: dev-tdd-green
+        action: "Implement MINIMAL code to pass the failing test. No gold-plating."
+        commit_format: "TDD-<US-REF>-GREEN-<NN>: <implementation summary>"
+        checkpoint: "Mark checkbox [x] in implementation-plan.md for this task"
+      - id: tdd-refactor
+        agent: dev-tdd-refactor
+        action: "Improve code quality (clarity, duplication, complexity) without breaking tests."
+        commit_format: "TDD-<US-REF>-REFACTOR-<NN>: <refactoring summary>"
+        checkpoint: "Mark checkbox [x] in implementation-plan.md for this task"
+      - id: tdd-layer-complete
+        agent: dev-tdd
+        action: "After all cycles in layer: run full BDD suite, verify layer checkboxes [x], proceed to next layer."
+        action_ddd_on: "Validate domain events fired correctly. Check aggregate invariants."
+
+  - id: phase_4_direct_impl
+    name: "Direct Implementation (tddMode=false)"
+    agent: dev-lead
+    if: "config.development_modes.tddMode == false"
+    prerequisite: "plan-approval.yaml status == 'approved'"
+    cadence: "per story"
+    steps:
+      - id: dev-implement
+        action: "Implement feature layer by layer. Write unit tests alongside or after implementation."
+        commit_format: "IMPL-<US-REF>-<LAYER>: <description>"
+        checkpoint: "Mark checkboxes [x] in implementation-plan.md as layers complete"
+      - id: dev-unit-tests
+        action: "Ensure unit test coverage ≥80% for business logic. Run test suite → expect pass."
+
+  - id: phase_5_status_sync
+    name: "Dev-Lead Status Synchronization"
+    agent: dev-lead
+    cadence: "after story implementation complete"
+    steps:
+      - id: devlead-verify-complete
+        action: "Verify all BDD tests passing (if bddMode=true) or all acceptance criteria met (if bddMode=false)."
+      - id: devlead-status-update
+        action: "Update docs/05-implementation/user-stories.md: In Progress → Implemented. Update GitHub Issue: add comment with test results, coverage. Status → Implemented."
+
+  - id: phase_6_qa_validation
+    name: "QA Acceptance Validation"
+    agent: qa
+    cadence: "per story marked Implemented"
+    steps:
+      - id: qa-e2e-tests
+        action_bdd_on:  "Execute Playwright/E2E tests mapping to BDD scenarios. BDD pass rate is primary quality signal."
+        action_bdd_off: "Execute E2E tests against acceptance criteria (manual or scripted). Acceptance criteria compliance is quality signal."
+      - id: qa-comprehensive-check
+        action: "Validate: design system compliance, accessibility (WCAG), performance SLA, security (input sanitization, auth). Run regression suite."
+      - id: qa-pass
+        condition: "all checks pass"
+        action: "Update user-stories.md: Implemented → Delivered. Update GitHub Issue: ✅ Delivered. Attach test report."
+      - id: qa-fail
+        condition: "any check fails"
+        action: "Document bugs in GitHub Issue (severity, repro steps, screenshots/traces). Keep status Implemented + ⚠️ Bug label. Hand back to dev-lead."
+
+  - id: phase_7_sprint_closure
+    name: "PM Sprint Closure & Archive"
+    agent: pm
+    cadence: "end of sprint"
+    steps:
+      - id: pm-verify-sprint-complete
+        action: "Verify all stories Delivered. All GitHub Issues closed. All commits merged."
+      - id: pm-calculate-metrics
+        action: "Velocity, completion rate, cycle time, coverage, quality metrics."
+      - id: pm-archive-sprint
+        action: "Rename current-sprint.md → sprint-N.md. Add retrospective notes. Commit archive."
+      - id: pm-next-sprint
+        action: "Create new current-sprint.md. Adjust velocity estimates. Update project-status.md."
+
+# ── Epic Completion Logic ──────────────────────────────────────────────────────
+epic_completion:
+  rule: "Epic status = Implemented when ALL child stories are Implemented."
+  tracking: "docs/05-implementation/user-stories.md (epic progress auto-calculated)"
+
+# ── Logging ───────────────────────────────────────────────────────────────────
+logging:
+  mandatory: true
+  template: ".github/templates/agent-log-tmpl.md"
+  paths:
+    dev-lead:       "logs/05-implementation/agent-dev-lead-YYYYMMDD.md"
+    dev-tdd:        "logs/05-implementation/epics/<EPIC-REF>/user-stories/<US-REF>/agent-dev-tdd-YYYYMMDD.md"
+    dev-tdd-red:    "logs/05-implementation/epics/<EPIC-REF>/user-stories/<US-REF>/agent-dev-tdd-red-YYYYMMDD.md"
+    dev-tdd-green:  "logs/05-implementation/epics/<EPIC-REF>/user-stories/<US-REF>/agent-dev-tdd-green-YYYYMMDD.md"
+    dev-tdd-refactor: "logs/05-implementation/epics/<EPIC-REF>/user-stories/<US-REF>/agent-dev-tdd-refactor-YYYYMMDD.md"
+    qa:             "logs/05-implementation/agent-qa-YYYYMMDD.md"
+    orchestrator:   "logs/05-implementation/agent-orchestrator-YYYYMMDD.md"
+
+# ── Checkpoint ────────────────────────────────────────────────────────────────
+checkpoint:
+  on_entry:          "current_phase: '05-implementation', phase_status: 'in_progress'"
+  on_story_start:    "active_story: <US-REF>, active_epic: <EPIC-REF>, current_layer: 1, current_cycle: 1"
+  on_red_complete:   "active_tdd_cycle: 'red-NN'"
+  on_green_complete: "active_tdd_cycle: 'green-NN'"
+  on_refactor_done:  "active_tdd_cycle: 'refactor-NN'"
+  on_story_done:     "clear active_story, advance to next story"
+  on_all_epics_done: "phase_status: 'complete', last_gate_passed: 'gate-05-implementation'"
+
+status: ACTIVE
+version: "3.0"
+last_updated: "2026-05-22"

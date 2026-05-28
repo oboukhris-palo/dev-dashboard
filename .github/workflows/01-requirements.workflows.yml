@@ -1,0 +1,211 @@
+# 01-requirements.workflows.yml
+# Requirements Workflow — Phases 1-2
+# Converted from 01-requirements.workflows.md (compact YAML, behaviour preserved)
+
+workflow_id: REQUIREMENTS-001
+phase: "01-requirements"
+name: "Requirements (Phases 1-2)"
+
+metadata:
+  pdlc_phases: [1, 2]
+  output_location: "docs/01-requirements/"
+  input: "00-assessment gate passed"
+  handoff_to: "02-architecture.workflows.yml"
+  agents: [pm, po, ba, architect, ux]
+  log_path: "logs/01-requirements/agent-{name}-YYYYMMDD.md"
+  quality_gate: ".github/gates/gate-01-requirements.md"
+
+# ── Conditions (branching based on framework-config.mjs) ─────────────────────
+conditions:
+  bdd_mode_on:
+    flag: "config.development_modes.bddMode == true"
+    behaviour: "BA generates Gherkin .feature files per story. BDD scenarios are mandatory for each acceptance criterion."
+    affected_steps: [ba-bdd-scenarios, ba-stories-validation]
+  bdd_mode_off:
+    flag: "config.development_modes.bddMode == false"
+    behaviour: "BA documents acceptance criteria in plain text. No .feature files at this phase. QA will cover testing later."
+    affected_steps: [ba-bdd-scenarios]
+    modification: "ba-bdd-scenarios step is SKIPPED. Acceptance criteria in user-story YAML only."
+  ddd_mode_on:
+    flag: "config.development_modes.dddMode == true"
+    behaviour: "Stories must identify domain aggregates, value objects, and domain events. Architect reviews for DDD compliance."
+    affected_steps: [architect-story-technical-review]
+  experimental_or_local_dev:
+    project_types: [experimental, local-dev]
+    behaviour: "Lightweight requirements only. Skip personas, business-case. Single stage: PO creates minimal user stories."
+    stages_active: [stage_3_stories_only]
+
+artifacts:
+  templates:
+    - .github/templates/epic-tmpl.yml
+    - .github/templates/user-story-tmpl.yml
+    - .github/templates/prd-tmpl.yml
+    - .github/templates/agent-log-tmpl.md
+    - .github/templates/gate-report-tmpl.md
+  gates:
+    - .github/gates/gate-01-requirements.md
+  guides:
+    - .github/guides/gate-blocker-resolution.guide.md
+    - .github/guides/pattern-capture.guide.md
+  instructions:
+    - .github/instructions/documentation.instructions.md
+    - .github/instructions/framework-standards.instructions.md
+    - .github/instructions/agent-logging.instructions.md
+    - .github/instructions/estimation.instructions.md
+  scripts:
+    - .github/scripts/update-decision-trail.mjs
+
+# ── Document structure ────────────────────────────────────────────────────────
+output_structure:
+  "docs/01-requirements/requirements.md":    "Master PRD — business requirements, user needs"
+  "docs/01-requirements/personas.md":         "User archetypes with goals, pain points, behaviors"
+  "docs/01-requirements/business-case.md":    "Business justification, ROI projections, risks"
+  "docs/01-requirements/user-stories.md":     "SSOT — all epics + stories (master catalog)"
+  "docs/01-requirements/themes/epics/{EPIC-KEY}/epic.yml":                   "Epic metadata (epic-tmpl.yml)"
+  "docs/01-requirements/themes/epics/{EPIC-KEY}/stories/{STORY-KEY}.yml":    "Story metadata (user-story-tmpl.yml)"
+
+validation_rules:
+  - "Every story MUST have epicLink and epicKey fields"
+  - "Story key format: {EPIC-KEY}-{STORY-NUMBER} (e.g. AUTH-001-US-001)"
+  - "Epic completion = all child stories done"
+
+# ── Stages ────────────────────────────────────────────────────────────────────
+stages:
+  - id: stage_1
+    name: "Requirements Gathering"
+    if: "project_type NOT IN [experimental, local-dev]"
+    inputs: ["Stakeholder workshops", "market research", "business objectives"]
+    outputs: ["requirements.md (approved)"]
+    agents: [pm, po, architect]
+    steps:
+      - id: pm-kickoff
+        agent: pm
+        action: "Project charter, stakeholder map"
+      - id: pm-stakeholder-discovery
+        agent: pm
+        action: "Business objectives, pain points discovery"
+      - id: po-requirements-analysis
+        agent: po
+        action: "Create requirements.md — categorized and prioritized"
+      - id: architect-requirements-review
+        agent: architect
+        action: "Feasibility assessment"
+    approval_gate:
+      criteria: ["Requirements defined", "Business value justified", "Feasibility confirmed", "Metrics measurable"]
+
+  - id: stage_2
+    name: "Analysis & Business Justification"
+    if: "project_type NOT IN [experimental, local-dev]"
+    outputs: ["personas.md (approved)", "business-case.md (approved)"]
+    agents: [ba, po, architect]
+    steps:
+      - id: ba-personas
+        agent: ba
+        action: "Create personas.md — goals, pain points, behaviors per archetype"
+      - id: po-personas-validation
+        agent: po
+        action: "Validate personas against requirements, approve"
+      - id: ba-business-case
+        agent: ba
+        action: "Create business-case.md — ROI, projections, risks"
+      - id: architect-complexity-assessment
+        agent: architect
+        action: "Technical complexity input for business case"
+      - id: po-business-case-approval
+        agent: po
+        action: "Verify ROI, approve business-case.md"
+    approval_gate:
+      criteria: ["Personas complete", "Business case justified", "ROI aligned", "Risks mitigated"]
+
+  - id: stage_3_stories_only
+    name: "Lightweight Stories (experimental/local-dev only)"
+    if: "project_type IN [experimental, local-dev]"
+    steps:
+      - id: po-minimal-stories
+        agent: po
+        action: "Create minimal user-stories.md with epics and stories. No formal personas or business case required."
+        outputs: ["docs/01-requirements/user-stories.md"]
+
+  - id: stage_3
+    name: "Epic & User Story Creation"
+    if: "project_type NOT IN [experimental, local-dev]"
+    outputs: ["user-stories.md with all epics and stories"]
+    agents: [po, ba, ux, architect]
+    steps:
+      - id: po-epics-definition
+        agent: po
+        action: "Define epic groupings using epic-tmpl.yml. Each epic = business domain."
+        template: ".github/templates/epic-tmpl.yml"
+      - id: ba-epics-validation
+        agent: ba
+        action: "Validate epic scope, dependencies, completeness"
+      - id: po-user-stories
+        agent: po
+        action: "Create user-stories.md with epic grouping using user-story-tmpl.yml. Include acceptance criteria."
+        template: ".github/templates/user-story-tmpl.yml"
+      - id: ba-bdd-scenarios
+        agent: ba
+        if_flag: "bddMode"
+        action_when_on:  "Write Gherkin BDD scenarios per story. Map each acceptance criterion to Given/When/Then."
+        action_when_off: "SKIPPED — BDD mode off. Acceptance criteria in plain text in story YAML only."
+      - id: ba-stories-validation
+        agent: ba
+        action: "Validate story schema (epicLink, epicKey, BDD coverage if bddMode=true)"
+      - id: ux-story-enrichment
+        agent: ux
+        action: "Enrich stories with design requirements, UI/UX notes"
+      - id: architect-story-technical-review
+        agent: architect
+        if_flag: "dddMode"
+        action_when_on:  "Add technical constraints. Identify domain aggregates and value objects per story."
+        action_when_off: "Add technical constraints only (no DDD artefacts required)."
+
+  - id: stage_3_5
+    name: "Story Estimation (PM-Led)"
+    if: "project_type NOT IN [experimental, local-dev]"
+    ref: ".github/instructions/estimation.instructions.md"
+    agents: [pm, architect, orchestrator]
+    steps:
+      - id: pm-context-assessment
+        agent: pm
+        action: "5-point context quality checklist per story (acceptance criteria clarity, schema, API contracts, BDD coverage, UI specs)"
+      - id: pm-layer-breakdown
+        agent: pm
+        action: "Base hours by layer. Apply context × skill × integration buffer. Formula: (Base × Context × Skill) + Buffer"
+      - id: pm-epic-aggregation
+        agent: pm
+        action: "Roll up estimates to epic totals + 3-scenario project forecast (Conservative/Balanced/Aggressive)"
+      - id: orchestrator-validation
+        agent: orchestrator
+        action: "Pre-approve estimates. Verify privacy rules (no personal team info in stories)."
+
+# ── Phase Exit ────────────────────────────────────────────────────────────────
+exit:
+  gate: ".github/gates/gate-01-requirements.md"
+  pass_criteria:
+    - "Epic-story linkage validated (epicLink + epicKey on every story)"
+    - "BDD scenarios written (if bddMode=true)"
+    - "PO sign-off on all stories"
+    - "Estimates populated (if project_type != experimental/local-dev)"
+  on_pass: "Proceed to 02-architecture.workflows.yml"
+  on_conditional: "Document conditions; proceed with restrictions"
+  on_fail: "BLOCK — see .github/guides/gate-blocker-resolution.guide.md"
+
+logging:
+  mandatory: true
+  template: ".github/templates/agent-log-tmpl.md"
+  paths:
+    po:           "logs/01-requirements/agent-po-YYYYMMDD.md"
+    ba:           "logs/01-requirements/agent-ba-YYYYMMDD.md"
+    pm:           "logs/01-requirements/agent-pm-YYYYMMDD.md"
+    architect:    "logs/01-requirements/agent-architect-YYYYMMDD.md"
+    orchestrator: "logs/01-requirements/agent-orchestrator-YYYYMMDD.md"
+
+checkpoint:
+  on_entry:           "current_phase: '01-requirements', phase_status: 'in_progress'"
+  on_stories_created: "add 'gate-requirements' to decision_gates_pending"
+  on_gate_pass:       "last_gate_passed: 'gate-requirements', phase_status: 'complete'"
+
+status: ACTIVE
+version: "3.0"
+last_updated: "2026-05-22"

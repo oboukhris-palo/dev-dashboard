@@ -1,0 +1,205 @@
+# cicd.workflows.yml
+# CI/CD Pipeline Workflow
+# Converted from cicd.workflows.md (compact YAML, behaviour preserved)
+
+workflow_id: CICD-001
+phase: "cross-phase"
+name: "CI/CD Pipeline (Bootstrap → Stabilization → Optimization)"
+
+metadata:
+  scope: "Automated validation, testing, and deployment for all code changes"
+  agents: [dev-lead, architect, pm, ba]
+  log_path: "logs/agent-{name}-YYYYMMDD.md"
+  deployment: "dev → staging → production"
+
+# ── Conditions (no dev mode branching — pure phase-based evolution) ───────────
+# CI/CD evolves by project phase, not by tdd/bdd/ddd flags.
+# bddMode=true means Phase 2 CI includes BDD/E2E test stages.
+conditions:
+  bdd_in_ci:
+    flag: "config.development_modes.bddMode == true"
+    behaviour: "Phase 2+ CI includes automated BDD test execution. BA validates .feature file results in pipeline."
+    affected_stages: [phase_2_stabilization]
+  tdd_hooks:
+    flag: "config.development_modes.tddMode == true"
+    behaviour: "pre-commit hook enforces test-first. Coverage gate ≥80% hard block."
+    affected_stages: [phase_1_bootstrap, phase_2_stabilization, phase_3_optimization]
+
+artifacts:
+  templates:
+    - .github/templates/pull_request_template.md
+    - .github/templates/agent-log-tmpl.md
+    - .github/templates/monitoring-setup-tmpl.md
+    - .github/templates/incident-response-tmpl.md
+    - .github/templates/approval-gate-tmpl.md
+  guides:
+    - .github/guides/tdd-enforcement.guide.md
+  instructions:
+    - .github/instructions/coding.instructions.md
+    - .github/instructions/git-workflow.instructions.md
+    - .github/instructions/documentation.instructions.md
+    - .github/instructions/api-design.instructions.md
+    - .github/instructions/framework-standards.instructions.md
+    - .github/instructions/agent-logging.instructions.md
+  scripts:
+    - .github/scripts/setup-git-hooks.mjs
+  patterns:
+    - .github/patterns/implementation/tdd-cycles/layer-by-layer-tdd.md
+
+pipeline_overview: "Commit → Build+Test → Quality+Security → Deploy (dev/staging/prod) → Monitor → Feedback"
+
+# ── Branch Strategy ───────────────────────────────────────────────────────────
+branch_strategy:
+  flow: "main ← develop ← feature | bugfix | hotfix | refactor"
+  merge_requirements:
+    phase_1: "CI pass, 1+ approval"
+    phase_2_plus: "CI pass, 2+ approvals, code review"
+  merge_strategy: "Create a merge commit (preserve full history — no squash)"
+  ref: ".github/instructions/git-workflow.instructions.md"
+
+# ── Phase 1: Bootstrap ────────────────────────────────────────────────────────
+phases:
+  - id: phase_1_bootstrap
+    name: "Bootstrap (Weeks 1-4)"
+    goal: "Basic automation for rapid MVP development"
+    ci_stages:
+      - "Build"
+      - "Unit tests"
+      - "Basic linting"
+      - "Security scan (critical vulnerabilities only)"
+    cd_strategy:
+      - "Auto-deploy to dev on main merge"
+      - "Manual staging deploy and tests"
+      - "No production deployment"
+    quality_gates:
+      block: ["Build failure", "Critical security vulnerability"]
+      warn:  ["Coverage < 60%", "Lint issues"]
+    monitoring:
+      - "Health checks every 5 min"
+      - "Error logs — manual review"
+    agents: [dev-lead, ba]
+    cost_estimate: "$50-100/mo"
+
+  - id: phase_2_stabilization
+    name: "Stabilization (Weeks 5-8)"
+    goal: "Production-grade automation with staging"
+    ci_stages:
+      - "All Phase 1 stages"
+      - "SonarQube analysis"
+      - "Architecture violation checks"
+      - "SAST scan"
+      - "Container image scanning"
+    ct_stages:
+      - "Integration tests"
+      - "Deploy to staging"
+      - "Automated BDD (if bddMode=true)"
+      - "E2E tests"
+      - "Performance baseline"
+    cd_strategy:
+      - "Canary deployment: 10% → 50% → 100%"
+      - "Auto-rollback on error spike"
+      - "Approval gates: Dev-Lead + Architect required"
+    quality_gates:
+      block: ["Test failure", "Coverage decline", "Security vulnerability", "Architecture violation"]
+      warn:  ["Quality decline > 5%", "Performance decline > 5%"]
+    monitoring:
+      - "Real-time errors (Sentry)"
+      - "APM — New Relic or Datadog"
+      - "Health checks every 2 min"
+      - "Automated alerts"
+    agents: [dev-lead, architect, ba, pm]
+    cost_estimate: "$200-500/mo"
+
+  - id: phase_3_optimization
+    name: "Optimization (Weeks 9+)"
+    goal: "Enterprise-grade with zero-downtime deployments"
+    ci_stages:
+      - "All Phase 2 stages"
+      - "Mutation testing"
+      - "Complexity analysis"
+      - "DAST scan"
+      - "Secret detection"
+    ct_stages:
+      - "All Phase 2 stages"
+      - "Load tests"
+      - "Chaos engineering"
+      - "Accessibility (WCAG)"
+    cd_strategy:
+      - "Blue-green deployment (zero downtime)"
+      - "Synthetic tests post-deploy"
+      - "Real User Monitoring (RUM)"
+      - "DB migration validation"
+      - "Cost optimization analysis"
+    quality_gates:
+      block:
+        - "All Phase 2 gates"
+        - "Mutation score decline"
+        - "Chaos test failure"
+        - "Load test > 10% worse than baseline"
+    monitoring:
+      - "Full observability: Prometheus + Grafana + ELK"
+      - "Distributed tracing (Jaeger)"
+      - "Real User Monitoring"
+      - "Predictive alerting"
+    agents: [dev-lead, architect, ba, pm]
+    cost_estimate: "$1K-5K/mo"
+
+# ── Rollback Strategy ─────────────────────────────────────────────────────────
+rollback:
+  phase_1: "Manual redeployment"
+  phase_2: "One-click rollback to previous version (30 min window)"
+  phase_3: "Instant rollback via blue-green switching (any time)"
+
+# ── Artifact Retention ────────────────────────────────────────────────────────
+artifact_retention:
+  keep_latest_releases: 10
+  release_retention_days: 90
+  feature_branch_artifact_ttl_days: 7
+
+# ── Failure Recovery ──────────────────────────────────────────────────────────
+failure_recovery:
+  build_fail:    "Dev fixes issue → Re-run CI"
+  test_fail:     "Fix code or update test → Re-run"
+  deploy_fail:
+    phase_1:     "Fix and redeploy"
+    phase_2_plus: "Auto-rollback triggered"
+  performance:   "Architect reviews → Accept or optimize"
+
+# ── Metrics ───────────────────────────────────────────────────────────────────
+metrics:
+  efficiency:
+    build_time:     "< 10 min (Phase 1), < 5 min (Phase 2+)"
+    deploy_freq:    "1-4x/day (Phase 2+)"
+    time_to_prod:   "< 30 min"
+  quality:
+    build_success:  "> 95%"
+    test_pass:      "100%"
+    coverage:       "> 80%"
+    deploy_fail:    "< 5% (Phase 1), < 1% (Phase 2-3)"
+  reliability:
+    rollback_rate:  "< 10% (Phase 1), < 5% (Phase 2), < 1% (Phase 3)"
+    mttr:           "< 30 min"
+    uptime:         "> 99.5% (Phase 2+), > 99.9% (Phase 3)"
+  security:
+    critical_vulns: "0"
+    high_vulns:     "< 5"
+    scan_pass:      "100%"
+
+# ── Agent Responsibilities ────────────────────────────────────────────────────
+agent_responsibilities:
+  dev-lead: "Monitor pipeline, approve deploys, fix builds, optimize performance, update coding standards"
+  architect: "Validate architecture compliance, approve production changes, review performance/cost, security"
+  pm:       "Coordinate releases, track metrics, schedule maintenance windows"
+  ba:       "Validate BDD test results in CI, confirm acceptance criteria behaviour, update iteration-planning.md"
+
+logging:
+  mandatory: true
+  template: ".github/templates/agent-log-tmpl.md"
+  paths:
+    dev-lead:    "logs/agent-dev-lead-YYYYMMDD.md"
+    architect:   "logs/agent-architect-YYYYMMDD.md"
+    orchestrator: "logs/agent-orchestrator-YYYYMMDD.md"
+
+status: ACTIVE
+version: "3.0"
+last_updated: "2026-05-22"

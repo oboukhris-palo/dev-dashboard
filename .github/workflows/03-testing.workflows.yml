@@ -1,0 +1,149 @@
+# 03-testing.workflows.yml
+# Testing Strategy Workflow — Phase 5
+# Converted from 03-testing.workflows.md (compact YAML, behaviour preserved)
+
+workflow_id: TESTING-001
+phase: "03-testing"
+name: "Testing Strategy (Phase 5)"
+
+metadata:
+  pdlc_phase: 5
+  output_location: "docs/03-testing/"
+  input: "02-architecture gate passed"
+  handoff_to: "04-planning.workflows.yml"
+  agents: [dev-lead, ba, qa, po]
+  log_path: "logs/03-testing/agent-{name}-YYYYMMDD.md"
+  quality_gate: ".github/gates/gate-03-testing.md"
+
+# ── Conditions (branching based on framework-config.mjs) ─────────────────────
+conditions:
+  bdd_mode_on:
+    flag: "config.development_modes.bddMode == true"
+    behaviour: |
+      BA consolidates BDD .feature files from user stories.
+      test-strategies.md MUST reference all .feature files.
+      Coverage target: 95% acceptance criteria → BDD scenario mapping.
+    affected_steps: [ba-bdd-consolidation, dev-lead-test-strategies]
+    additional_outputs: ["features/ directories per epic/story"]
+  bdd_mode_off:
+    flag: "config.development_modes.bddMode == false"
+    behaviour: |
+      No .feature files required. BA validates acceptance criteria coverage in plain text.
+      Unit tests are the primary quality signal. QA designs manual E2E test plan.
+    affected_steps: [ba-bdd-consolidation]
+    modification: "ba-bdd-consolidation focuses on acceptance criteria text review, not Gherkin."
+  tdd_mode_on:
+    flag: "config.development_modes.tddMode == true"
+    behaviour: "Test strategy MUST specify unit test coverage target ≥80%. Defines RED/GREEN/REFACTOR test-first approach."
+    affected_steps: [dev-lead-test-strategies]
+  experimental_or_local_dev:
+    project_types: [experimental, local-dev]
+    behaviour: "Skip formal testing strategy. QA writes lightweight smoke test list only."
+    stages_active: [stage_5_lightweight]
+
+artifacts:
+  templates:
+    - .github/templates/agent-log-tmpl.md
+    - .github/templates/gate-report-tmpl.md
+    - .github/templates/user-story-tmpl.yml
+    - .github/templates/performance-testing-tmpl.md
+    - .github/templates/compliance-checklist-tmpl.md
+    - .github/templates/meeting-minutes-tmpl.yml
+  gates:
+    - .github/gates/gate-03-testing.md
+  guides:
+    - .github/guides/gate-blocker-resolution.guide.md
+    - .github/guides/tdd-enforcement.guide.md
+  instructions:
+    - .github/instructions/test-strategy.instructions.md
+    - .github/instructions/documentation.instructions.md
+    - .github/instructions/agent-logging.instructions.md
+    - .github/instructions/framework-standards.instructions.md
+  patterns:
+    - .github/patterns/testing/bdd-scenarios/template-library.md
+  scripts:
+    - .github/scripts/update-decision-trail.mjs
+
+output_structure:
+  "docs/03-testing/test-strategies.md":           "Overall testing approach and coverage targets"
+  "features/{epic}/{story}/*.feature":             "BDD feature files (if bddMode=true)"
+  "docs/03-testing/test-coverage-targets.md":      "Coverage targets by component/layer"
+  "docs/03-testing/test-data-strategy.md":         "Fixtures, datasets, seeding approach"
+  "docs/03-testing/non-functional-testing-plan.md": "Performance, security, load testing plan"
+
+# ── Stages ────────────────────────────────────────────────────────────────────
+stages:
+  - id: stage_5_lightweight
+    name: "Lightweight Smoke Tests (experimental/local-dev)"
+    if: "project_type IN [experimental, local-dev]"
+    steps:
+      - id: qa-smoke-list
+        agent: qa
+        action: "Write lightweight smoke test list covering critical paths. No formal test strategy document required."
+        outputs: ["docs/03-testing/smoke-tests.md"]
+
+  - id: stage_5
+    name: "Testing Strategy"
+    if: "project_type NOT IN [experimental, local-dev]"
+    inputs: ["user-stories.md (with BDD)", "tech-spec.md", "flow-diagrams.md"]
+    outputs: ["test-strategies.md"]
+    agents: [dev-lead, ba, qa, po]
+    steps:
+      - id: dev-lead-test-strategies
+        agent: dev-lead
+        action_base: "Define testing approach: unit (≥80% coverage), integration (API contracts), E2E (user journeys), performance, security (OWASP)."
+        action_tdd_addon: "Specify test-first RED/GREEN/REFACTOR requirements. Unit tests MUST be written before implementation."
+        action_bdd_addon: "Reference all .feature files. BDD scenarios drive acceptance testing."
+        outputs: ["docs/03-testing/test-strategies.md"]
+      - id: ba-bdd-consolidation
+        agent: ba
+        action_when_bdd_on:  "Verify BDD coverage: map each acceptance criterion → Gherkin scenario (1:1 or 1:N). Organize by epic/story. Validate quality (specific, actionable, implementation-ready)."
+        action_when_bdd_off: "Verify acceptance criteria coverage in user-story YAML. Confirm each criterion is testable. Flag any ambiguous criteria for clarification."
+      - id: qa-test-strategy-review
+        agent: qa
+        action: "Review testing approach. Validate: test data/fixtures strategy, environment requirements, non-functional testing, edge case coverage."
+      - id: dev-lead-performance-plan
+        agent: dev-lead
+        action: "Create non-functional-testing-plan.md — load tests, stress tests, performance baselines."
+        ref: ".github/templates/performance-testing-tmpl.md"
+        outputs: ["docs/03-testing/non-functional-testing-plan.md"]
+      - id: po-test-strategy-approval
+        agent: po
+        action: "Validate coverage against business requirements. Approve test-strategies.md."
+    approval_gate:
+      criteria:
+        - "BDD covers acceptance criteria (if bddMode=true: 95%+)"
+        - "Unit coverage ≥80% targeted"
+        - "Integration tests cover API flows"
+        - "E2E tests cover user journeys"
+        - "Performance/security aligned with requirements"
+
+# ── Phase Exit ────────────────────────────────────────────────────────────────
+exit:
+  gate: ".github/gates/gate-03-testing.md"
+  pass_criteria:
+    - "test-strategies.md approved"
+    - "BDD .feature files consolidated (if bddMode=true)"
+    - "Coverage targets documented"
+    - "Non-functional testing plan present"
+  on_pass: "Proceed to 04-planning.workflows.yml"
+  on_conditional: "Return to BA for BDD refinement; re-run within 1 day"
+  on_fail: "BLOCK — see .github/guides/gate-blocker-resolution.guide.md"
+
+logging:
+  mandatory: true
+  template: ".github/templates/agent-log-tmpl.md"
+  paths:
+    ba:           "logs/03-testing/agent-ba-YYYYMMDD.md"
+    qa:           "logs/03-testing/agent-qa-YYYYMMDD.md"
+    dev-lead:     "logs/03-testing/agent-dev-lead-YYYYMMDD.md"
+    orchestrator: "logs/03-testing/agent-orchestrator-YYYYMMDD.md"
+
+checkpoint:
+  on_entry:          "current_phase: '03-testing', phase_status: 'in_progress'"
+  on_strategy_done:  "add 'gate-testing' to decision_gates_pending"
+  on_gate_pass:      "last_gate_passed: 'gate-testing', phase_status: 'complete'"
+
+status: ACTIVE
+version: "3.0"
+last_updated: "2026-05-22"

@@ -1,0 +1,75 @@
+<div class="setup-wizard">
+  <div class="wizard-header">
+    <img src="assets/palo-it-logo.png" alt="Palo IT" class="wizard-logo" />
+    <h1 mat-dialog-title>Welcome to Dev Dashboard</h1>
+    <p class="subtitle">Let's set up your workspace directories</p>
+  </div>
+
+  <mat-dialog-content>
+    <div class="wizard-content">
+      <div class="instructions">
+        <mat-icon class="info-icon">info</mat-icon>
+        <p>Select the local folders where your git repositories are located. 
+           The dashboard will scan these directories to discover and display your projects.</p>
+      </div>
+
+      <!-- Workspace paths list -->
+      @if (workspacePaths().length > 0) {
+        <div class="workspace-list">
+          <h3>Selected Workspaces:</h3>
+          <mat-list>
+            @for (path of workspacePaths(); track path) {
+              <mat-list-item>
+                <mat-icon matListItemIcon>folder</mat-icon>
+                <span matListItemTitle class="path-text">{{ path }}</span>
+                <button 
+                  mat-icon-button 
+                  matListItemMeta
+                  (click)="removePath(path)"
+                  matTooltip="Remove workspace"
+                  class="remove-btn">
+                  <mat-icon>close</mat-icon>
+                </button>
+              </mat-list-item>
+            }
+          </mat-list>
+        </div>
+      } @else {
+        <div class="empty-workspace">
+          <mat-icon class="empty-icon">folder_open</mat-icon>
+          <p>No workspaces added yet</p>
+        </div>
+      }
+
+      <!-- Add workspace button -->
+      <div class="add-workspace-section">
+        <button 
+          mat-raised-button 
+          color="primary"
+          (click)="addWorkspace()"
+          data-testid="btn-add-workspace">
+          <mat-icon>add</mat-icon>
+          Add Workspace Folder
+        </button>
+      </div>
+    </div>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button 
+      mat-button 
+      (click)="cancel()"
+      data-testid="btn-cancel-wizard">
+      Skip for Now
+    </button>
+    <button 
+      mat-raised-button 
+      class="scan-button"
+      [disabled]="workspacePaths().length === 0"
+      (click)="scanWorkspaces()"
+      data-testid="btn-scan-wizard">
+      <mat-icon>search</mat-icon>
+      Scan Workspaces
+    </button>
+  </mat-dialog-actions>
+</div>

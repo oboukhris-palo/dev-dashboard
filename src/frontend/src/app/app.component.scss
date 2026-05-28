@@ -3,11 +3,19 @@
   top: 0;
   z-index: 1000;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background-color: var(--color-black) !important;
+  color: var(--color-white);
+}
+
+.toolbar-logo {
+  height: 40px;
+  margin-right: var(--spacing-md);
 }
 
 .toolbar-title {
   font-size: 20px;
   font-weight: 700;
+  color: var(--color-white);
 }
 
 .toolbar-spacer {
@@ -21,6 +29,20 @@
   border-radius: 16px;
   font-size: 14px;
   font-weight: 500;
+}
+
+.scan-button {
+  margin-left: var(--spacing-md);
+  background-color: #00A651 !important;
+  color: white !important;
+  
+  &:hover:not(:disabled) {
+    background-color: #008A43 !important;
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+  }
 }
 
 .main-container {
